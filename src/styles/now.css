@@ -1,0 +1,23 @@
+/* live "now" gauge */
+.now{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:center}
+.now-main{min-width:0;display:grid;gap:8px}
+.eyebrow{display:flex;gap:10px;align-items:baseline;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.eyebrow .num{font-size:15px;color:var(--ink)}
+.now-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.now-title h2{font-family:var(--f-display);font-size:38px;font-weight:700;line-height:1.15}
+.now-desc{color:var(--muted);max-width:60ch}
+
+.now-count{min-width:0;display:grid;gap:6px;padding:16px 18px;border-radius:16px;background:var(--surface-2)}
+.count-label{font-size:14px;color:var(--muted)}
+.count-label b{color:var(--ink);font-weight:600}
+.count{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:46px;font-weight:600;line-height:1.05;direction:ltr;text-align:right;color:var(--c,var(--ink))}
+.nu-arab .count{font-family:var(--f-body)}
+.count-sub{font-size:13.5px;color:var(--muted)}
+.next-alert{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.next-alert svg{width:15px;height:15px;flex:none}
+
+@media (max-width:760px){
+  .now{grid-template-columns:1fr;padding:18px;gap:16px}
+  .now-title h2{font-size:32px}
+  .count{font-size:40px}
+}

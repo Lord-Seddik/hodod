@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>حدود الوقت</title>
+  <meta name="description" content="تقويم الصلوات بحدود الاختيار والكراهة والخروج، مع عدّاد حيّ وتنبيهات وجدول شهري.">
+  <meta name="theme-color" content="#eff1f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c0f1e" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="var(--line)" stroke-width="3"/>
+        <path d="M20 2 A18 18 0 0 1 38 20" fill="none" stroke="var(--ok)" stroke-width="3"/>
+        <path d="M38 20 A18 18 0 0 1 29 35.6" fill="none" stroke="var(--karaha)" stroke-width="3"/>
+        <path d="M29 35.6 A18 18 0 0 1 20 38" fill="none" stroke="var(--exit)" stroke-width="3"/>
+        <line x1="20" y1="20" x2="20" y2="8" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="20" y1="20" x2="28" y2="25" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="2.4" fill="var(--ink)"/>
+      </svg>
+      <div>
+        <h1>حدود الوقت</h1>
+        <p>تقويم الصلوات بحدود الاختيار والكراهة والخروج</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-loc" id="locBtn" type="button" aria-label="تغيير الموقع">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        <span id="locName">—</span>
+      </button>
+      <button class="btn icon" id="setBtn" type="button" aria-label="الإعدادات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- live "now" gauge -->
+  <section class="now" id="nowCard" aria-live="off">
+    <div class="now-main">
+      <div class="eyebrow"><span>الآن في <span id="nowCity">—</span></span><span class="num" id="clock">--:--:--</span></div>
+      <div class="now-title"><h2 id="nowPrayer">—</h2><span class="pill" id="nowPill"></span></div>
+      <p class="now-desc" id="nowDesc"></p>
+    </div>
+    <div class="now-count" id="nowCount">
+      <div class="count-label" id="countLabel">—</div>
+      <div class="count" id="count">--:--:--</div>
+      <div class="count-sub" id="countSub"></div>
+      <div class="prog" role="progressbar" aria-label="ما مضى من المرحلة الحالية" aria-valuemin="0" aria-valuemax="100" id="progBar"><i id="prog"></i></div>
+      <div class="next-alert" id="nextAlert"></div>
+    </div>
+  </section>
+
+  <!-- view tabs + date navigation -->
+  <nav class="dayhead" aria-label="التاريخ والعرض">
+    <div class="tabs" role="tablist" aria-label="طريقة العرض">
+      <button type="button" role="tab" id="tabDay" aria-controls="dayView" aria-selected="true">اليوم</button>
+      <button type="button" role="tab" id="tabMonth" aria-controls="monthView" aria-selected="false" tabindex="-1">الشهر</button>
+    </div>
+    <div class="datenav">
+      <button class="btn sm icon" id="prevBtn" type="button" aria-label="السابق" title="السابق (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="date"><strong id="gDate">—</strong><span id="hDate">—</span></div>
+      <button class="btn sm icon" id="nextBtn" type="button" aria-label="التالي" title="التالي (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="btn sm" id="todayBtn" type="button" title="اليوم (T)">اليوم</button>
+      <input type="date" id="dateInput" aria-label="اختيار تاريخ">
+    </div>
+  </nav>
+
+  <!-- day view -->
+  <div class="day-view" id="dayView" role="tabpanel" aria-labelledby="tabDay">
+    <section class="panel" id="skyPanel">
+      <div class="panel-head"><h3>مسار الشمس وحدود اليوم</h3><span class="muted" id="skyNote">من منتصف الليل إلى منتصف الليل بالتوقيت المحلي</span></div>
+      <div class="sky-wrap" id="skyWrap"><canvas id="skyCanvas" aria-hidden="true"></canvas><div class="sky-now" id="skyNow" hidden></div></div>
+      <div class="sky-labels" id="skyLabels"></div>
+      <div class="sky-bands" id="skyBands"></div>
+      <div class="sky-ticks num" id="skyTicks"></div>
+    </section>
+    <div class="polar" id="polarMsg" hidden></div>
+    <section class="grid" id="cards" aria-label="الصلوات"></section>
+    <section class="panel">
+      <div class="panel-head"><h3>دلالة الألوان</h3></div>
+      <div class="legend">
+        <div class="t-ok"><i class="dot"></i><p><b>وقت الاختيار.</b> <span>يجوز الأداء بلا حرج باتفاق.</span></p></div>
+        <div class="t-khilaf"><i class="dot"></i><p><b>منطقة خلاف.</b> <span>مختار عند بعض المذاهب، وخارج المختار عند غيرها.</span></p></div>
+        <div class="t-karaha"><i class="dot"></i><p><b>كراهة أو ضرورة.</b> <span>الصلاة أداء، ويأثم المؤخِّر بلا عذر عند المالكية والحنابلة.</span></p></div>
+        <div class="t-darura"><i class="dot"></i><p><b>بعد الحدّ.</b> <span>خروج عند من حدّ الوقت به، وضرورة عند الجمهور.</span></p></div>
+        <div class="t-exit"><i class="dot"></i><p><b>الخروج.</b> <span>تصير الصلاة بعده قضاءً.</span></p></div>
+        <div class="t-nahy"><i class="dot"></i><p><b>وقت نهي.</b> <span>لا تُبتدأ فيه نافلة مطلقة.</span></p></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- month view -->
+  <section class="panel" id="monthView" role="tabpanel" aria-labelledby="tabMonth" hidden>
+    <div class="month-head">
+      <h3 id="monthTitle">—</h3>
+      <button class="btn sm" id="csvBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+        تنزيل الجدول (CSV)
+      </button>
+    </div>
+    <div class="table-wrap"><table id="monthTable"></table></div>
+    <p class="hint">الأحمر: أوقات الخروج. الأوقات الأخرى حدود كراهة أو خلاف.</p>
+  </section>
+
+  <!-- upcoming alerts -->
+  <section class="panel">
+    <div class="panel-head"><h3>التنبيهات القادمة</h3><span class="muted" id="alertMeta"></span></div>
+    <div class="alerts">
+      <ul id="alertList"></ul>
+      <div class="acts">
+        <button class="btn sm" id="soundBtn" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+          <span>الصوت</span>
+        </button>
+        <button class="btn sm" id="wakeBtn" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          <span>إبقاء الشاشة مضاءة</span>
+        </button>
+        <button class="btn sm" id="testBtn" type="button">تجربة التنبيه</button>
+      </div>
+    </div>
+    <p class="hint">التنبيهات تعمل ما دامت هذه الصفحة مفتوحة. فعّل «إشعارات النظام» من الإعدادات لتصلك وأنت في نافذة أخرى.</p>
+  </section>
+
+  <footer class="foot">
+    <p id="methodLine"></p>
+    <p>حساب فلكي تقريبي بدقة دقيقة إلى دقيقتين. تُقرَّب أوقات الدخول إلى الدقيقة التالية، وأوقات الخروج والكراهة إلى الدقيقة السابقة احتياطاً. تعريف الإسفار والاصفرار واشتباك النجوم اجتهادي ويمكن تعديله من الإعدادات، والمعتبر شرعاً العلامة المرئية.</p>
+  </footer>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- location dialog -->
+<dialog id="locDlg" aria-labelledby="locDlgTitle">
+  <form class="dlg" id="locForm" method="dialog">
+    <div class="dlg-head"><h3 id="locDlgTitle">الموقع</h3><button class="btn sm" value="cancel" type="submit">إغلاق</button></div>
+    <button class="btn" type="button" id="geoBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      <span>استخدام موقعي الحالي</span>
+    </button>
+    <label>ابحث عن مدينة
+      <input id="citySearch" type="search" placeholder="القاهرة، London، جاكرتا…" autocomplete="off">
+    </label>
+    <div class="city-list" id="cityList"></div>
+    <details id="customBox">
+      <summary>إحداثيات مخصّصة</summary>
+      <div class="custom-body">
+        <div class="row2">
+          <label>خط العرض (شمال +)<input id="cLat" type="number" step="0.0001" min="-90" max="90"></label>
+          <label>خط الطول (شرق +)<input id="cLon" type="number" step="0.0001" min="-180" max="180"></label>
+        </div>
+        <label>المنطقة الزمنية<select id="cTz"></select></label>
+        <label>اسم الموقع<input id="cName" type="text" placeholder="مثلاً: بيتي"></label>
+        <button class="btn primary" type="button" id="cSave">استخدام هذا الموقع</button>
+        <p class="err" id="cErr" role="alert"></p>
+      </div>
+    </details>
+  </form>
+</dialog>
+
+<!-- settings dialog -->
+<dialog id="setDlg" aria-labelledby="setDlgTitle">
+  <form class="dlg" id="setForm" method="dialog">
+    <div class="dlg-head"><h3 id="setDlgTitle">الإعدادات</h3><button class="btn sm" value="cancel" type="submit">تم</button></div>
+
+    <fieldset>
+      <legend>طريقة الحساب الرسمية</legend>
+      <label>الهيئة<select id="sMethod"></select></label>
+      <div class="row2" id="customAngles" hidden>
+        <label>زاوية الفجر (°)<input id="sCF" type="number" step="0.1" min="5" max="25"></label>
+        <label>زاوية العشاء (°)<input id="sCI" type="number" step="0.1" min="5" max="25"></label>
+      </div>
+      <div class="row2">
+        <label>بداية العصر<select id="sAsr"><option value="std">ظل المثل (الجمهور)</option><option value="hanafi">ظل المثلين (أبو حنيفة)</option></select></label>
+        <label>دخول العشاء<select id="sIsha"><option value="method">حسب الهيئة</option><option value="red">الشفق الأحمر 15°</option><option value="white">الشفق الأبيض 18°</option></select></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>تعريف الحدود</legend>
+      <div class="row3">
+        <label>الإسفار (° تحت الأفق)<input id="sIsfar" type="number" step="0.5" min="1" max="12"></label>
+        <label>الاصفرار والإشراق (° فوق الأفق)<input id="sSunAlt" type="number" step="0.5" min="1" max="15"></label>
+        <label>اشتباك النجوم (° تحت الأفق)<input id="sStars" type="number" step="0.5" min="4" max="14"></label>
+      </div>
+      <div class="row3">
+        <label>الاستواء (دقائق قبل الزوال)<input id="sIstiwa" type="number" step="1" min="0" max="20"></label>
+        <label>نهاية الليل<select id="sNightEnd"><option value="fajr">طلوع الفجر (الجمهور)</option><option value="sunrise">طلوع الشمس</option></select></label>
+        <label>احتياط (دقائق)<input id="sIht" type="number" step="1" min="0" max="10"></label>
+      </div>
+      <label>البلاد ذات العرض العالي<select id="sHigh">
+        <option value="angle">نسبة الزاوية من الليل (الأشهر)</option>
+        <option value="seventh">سُبع الليل</option>
+        <option value="mid">منتصف الليل</option>
+        <option value="none">بلا تعديل</option>
+      </select></label>
+      <p class="note">الإسفار 6° يوافق بداية الشفق المدني حين تتميّز الوجوه. الاصفرار 5° هو المعتمد في التقاويم التركية، ويقابله الإشراق صباحاً. اشتباك النجوم 8° اجتهاد يحتاج رصداً.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>التنبيهات</legend>
+      <label class="check"><input id="sAlerts" type="checkbox"> تفعيل التنبيهات داخل الصفحة</label>
+      <div class="row2">
+        <label>قبل الخروج بـ (دقائق)<input id="sExitB" type="number" step="1" min="1" max="120"></label>
+        <label>قبل الكراهة بـ (دقائق)<input id="sKarB" type="number" step="1" min="1" max="120"></label>
+      </div>
+      <label class="check"><input id="sEntry" type="checkbox"> تنبيه عند دخول كل صلاة</label>
+      <label class="check"><input id="sSound" type="checkbox"> صوت مع التنبيه</label>
+      <label class="check"><input id="sNotify" type="checkbox"> إشعارات النظام حين تكون الصفحة في الخلفية</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>العرض</legend>
+      <div class="row3">
+        <label>نظام الساعة<select id="sH12"><option value="24">24 ساعة</option><option value="12">12 ساعة</option></select></label>
+        <label>الأرقام<select id="sNu"><option value="latn">0123</option><option value="arab">٠١٢٣</option></select></label>
+        <label>المظهر<select id="sTheme"><option value="auto">حسب النظام</option><option value="light">فاتح</option><option value="dark">داكن</option></select></label>
+      </div>
+    </fieldset>
+    <button class="btn" type="button" id="resetBtn">استعادة الإعدادات الافتراضية</button>
+  </form>
+</dialog>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

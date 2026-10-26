@@ -1,0 +1,17 @@
+{
+  "name": "hudud-alwaqt",
+  "private": true,
+  "version": "1.0.0",
+  "description": "حدود الوقت — تقويم الصلوات بحدود الاختيار والكراهة والخروج",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,72 @@
+/* tabs + date navigation */
+.dayhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tabs{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;border-radius:9px;padding:6px 16px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.datenav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.datenav .date{display:grid;text-align:center;min-width:150px;line-height:1.35}
+.datenav .date strong{font-weight:600}
+.datenav .date span{font-size:13px;color:var(--muted)}
+.datenav input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 8px;min-height:34px}
+
+.day-view{display:grid;gap:18px}
+
+/* sun-path strip */
+.sky-wrap{position:relative;height:74px;border-radius:12px;overflow:hidden;background:#101631}
+.sky-wrap canvas{display:block;width:100%;height:100%}
+.sky-now{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgb(0 0 0 / .25);transform:translateX(50%)}
+.sky-now::after{content:"";position:absolute;top:-1px;right:-4px;width:10px;height:10px;border-radius:50%;background:#fff}
+.sky-labels{position:relative;height:20px;margin-top:8px;font-size:12px;font-weight:600}
+.sky-labels span{position:absolute;top:0;transform:translateX(50%);white-space:nowrap;color:var(--ink)}
+.sky-bands{position:relative;height:14px;margin-top:4px;border-radius:5px;overflow:hidden;background:var(--surface-2)}
+.sky-bands i{position:absolute;top:0;bottom:0;background:var(--c)}
+.sky-ticks{position:relative;height:18px;margin-top:4px;font-size:11.5px;color:var(--muted)}
+.sky-ticks span{position:absolute;transform:translateX(50%)}
+
+/* prayer cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px;display:grid;gap:12px;align-content:start;min-width:0}
+.pcard.current{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.pcard header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pcard h3{font-family:var(--f-display);font-size:24px;font-weight:600}
+.pcard .range{font-size:14px;color:var(--muted)}
+.now-tag{font-size:12px;font-weight:600;color:var(--accent);margin-inline-start:8px;font-family:var(--f-body)}
+.seg{display:flex;height:10px;gap:3px}
+.seg i{display:block;min-width:4px;border-radius:4px;background:var(--c)}
+
+.marks{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.mk{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:start;padding:7px 8px;border-radius:10px}
+.mk .dot{width:10px;height:10px;border-radius:50%;background:var(--c);margin-top:7px}
+.mk .lbl{min-width:0}
+.mk .lbl b{display:block;font-weight:600;font-size:14.5px;line-height:1.4}
+.mk .lbl small{display:block;color:var(--muted);font-size:12.5px;line-height:1.5}
+.mk time{font-size:17px;font-weight:500;padding-top:1px}
+.mk.exit{background:color-mix(in srgb,var(--exit) 9%,transparent)}
+.mk.exit b,.mk.exit time{color:var(--exit)}
+.mk.exit time{font-weight:600}
+.mk.exit2 b{color:var(--darura)}
+.mk.minor{opacity:.78}
+.mk.cur{outline:1.5px dashed var(--accent);outline-offset:-1.5px}
+
+.polar{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
+.polar p{margin-top:6px}
+
+/* legend */
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 18px}
+.legend div{display:grid;grid-template-columns:12px 1fr;gap:10px;align-items:start;font-size:13.5px}
+.legend .dot{width:10px;height:10px;border-radius:3px;background:var(--c);margin-top:7px}
+.legend b{font-weight:600}
+.legend span{color:var(--muted)}
+
+@media (max-width:560px){
+  /* full-width tabs, then [‹ date ›] on one row and [today | picker] below */
+  .dayhead{display:grid}
+  .tabs{display:grid;grid-template-columns:1fr 1fr}
+  .datenav{display:grid;grid-template-columns:auto 1fr auto}
+  .datenav .date{min-width:0}
+  .datenav #todayBtn{justify-content:center}
+  .datenav input[type=date]{grid-column:2 / 4;width:100%}
+}
+@media (max-width:420px){
+  .grid{grid-template-columns:1fr}
+}

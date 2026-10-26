@@ -1,0 +1,31 @@
+dialog{border:0;border-radius:var(--radius-lg);padding:0;width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 48px);background:var(--surface);color:var(--ink);box-shadow:0 30px 80px rgb(0 0 0 / .35)}
+dialog::backdrop{background:rgb(8 10 22 / .5)}
+.dlg{display:grid;gap:16px;padding:20px;max-height:calc(100dvh - 48px);overflow:auto}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dlg-head h3{font-family:var(--f-display);font-size:22px;font-weight:600}
+.dlg fieldset{border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 14px 14px;margin:0;display:grid;gap:12px;min-width:0}
+.dlg legend{padding:0 6px;font-weight:600;font-size:14px}
+.dlg label{display:grid;gap:5px;font-size:13.5px;color:var(--muted);min-width:0}
+.dlg label.check{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:14px}
+.dlg label.check input{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.dlg input[type=number],.dlg input[type=text],.dlg input[type=search],.dlg select{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-sm);padding:8px 10px;color:var(--ink);min-height:40px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.note{font-size:12.5px;color:var(--muted)}
+.err{color:var(--exit);font-size:13px}
+.err:empty{display:none}
+details summary{cursor:pointer;font-weight:600}
+.custom-body{display:grid;gap:12px;margin-top:12px}
+
+/* city picker */
+.city-list{display:grid;gap:4px;max-height:300px;overflow:auto}
+.city-list button{display:flex;justify-content:space-between;gap:10px;text-align:right;border:1px solid transparent;background:transparent;border-radius:var(--radius-sm);padding:8px 10px;cursor:pointer}
+.city-list button:hover,.city-list button.sel{background:var(--surface-2);border-color:var(--line)}
+.city-list small{color:var(--muted)}
+
+@media (max-width:760px){
+  .row3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:420px){
+  .row2,.row3{grid-template-columns:1fr}
+}

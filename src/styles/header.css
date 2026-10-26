@@ -1,0 +1,8 @@
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:40px;height:40px;flex:none}
+.brand h1{font-family:var(--f-display);font-size:27px;font-weight:700;line-height:1.1}
+.brand p{color:var(--muted);font-size:13px}
+.top-actions{display:flex;gap:8px;align-items:center;min-width:0}
+.btn-loc{max-width:62vw}
+.btn-loc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
