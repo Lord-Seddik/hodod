@@ -5,17 +5,14 @@ import { fmtTime, duration, sameDay } from '../core/time.js';
 import { SEGMENTS } from '../data/rulings.js';
 import { $, esc } from './dom.js';
 
-function markClass(m) {
+function markClass(m, prev) {
   if (m.kind === 'exit') return 'exit';
-  if (m.kind === 'exit2') return 'exit2';
   if (m.kind === 'end' || m.kind === 'nahy') return 'minor';
+  // a boundary that changes nothing for the selected madhabs (hidden in compact view)
+  if (m.kind === 'bound' && prev && prev.seg === m.seg && m.agree) return 'quiet';
   return '';
 }
-function markType(m) {
-  if (m.kind === 'exit') return 'exit';
-  if (m.kind === 'exit2') return 'darura';
-  return m.seg || 'nahy';
-}
+const markType = m => (m.kind === 'exit' ? 'exit' : m.seg || 'nahy');
 
 function segmentBar(marks) {
   const out = [];
@@ -26,6 +23,17 @@ function segmentBar(marks) {
     out.push('<i class="t-' + a.seg + '" style="flex-grow:' + ((b.at - a.at) / MIN).toFixed(1) + '" title="' + esc(title) + '"></i>');
   }
   return out.join('');
+}
+
+/** Per-madhab verdicts: compact chips when they differ, and notes (details view). */
+function rulingsHtml(m) {
+  if (!m.rulings) return '';
+  const chips = m.agree ? '' : '<span class="mz-chips">' + m.rulings.map(r =>
+    '<span class="mz t-' + r.seg + '" title="' + esc(r.name + ': ' + r.note) + '">' + esc(r.short) + ': ' + esc(SEGMENTS[r.seg].pill) + '</span>').join('') + '</span>';
+  const notes = m.groups.length === 1
+    ? '<span class="mz-note">' + esc(m.groups[0].note) + '</span>'
+    : m.groups.map(g => '<span class="mz-note t-' + g.seg + '"><i></i>' + esc(g.label) + ': ' + esc(g.note) + '</span>').join('');
+  return chips + '<span class="mz-notes">' + notes + '</span>';
 }
 
 export function renderCards(B) {
@@ -41,9 +49,9 @@ export function renderCards(B) {
       const nx = ms[i + 1];
       const segLen = (m.seg && nx && nx.at > m.at && m.seg !== 'nahy') ? ' · ' + SEGMENTS[m.seg].pill + ' ' + duration(nx.at - m.at) : '';
       const curMark = isPhaseMark(cur, B.dt, m);
-      return '<li class="mk t-' + markType(m) + ' ' + markClass(m) + (curMark ? ' cur' : '') + '"' + (curMark ? ' aria-current="time"' : '') + '>'
+      return '<li class="mk t-' + markType(m) + ' ' + markClass(m, ms[i - 1]) + (curMark ? ' cur' : '') + '"' + (curMark ? ' aria-current="time"' : '') + '>'
         + '<i class="dot"></i>'
-        + '<span class="lbl"><b>' + esc(m.label) + '</b><small>' + esc(m.sub + segLen) + '</small></span>'
+        + '<span class="lbl"><b>' + esc(m.label) + '</b><small>' + esc(m.sub + segLen) + '</small>' + rulingsHtml(m) + '</span>'
         + '<time class="num">' + esc(fmtTime(m.at)) + '</time></li>';
     }).join('');
 

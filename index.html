@@ -74,6 +74,15 @@
     </div>
   </nav>
 
+  <!-- madhab filter + details toggle -->
+  <div class="filters">
+    <div class="madhabs" role="group" aria-label="المذاهب المعروضة" id="madhabBar"></div>
+    <button class="btn sm" id="detailsBtn" type="button" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span>التفاصيل</span>
+    </button>
+  </div>
+
   <!-- day view -->
   <div class="day-view" id="dayView" role="tabpanel" aria-labelledby="tabDay">
     <section class="panel" id="skyPanel">
@@ -85,13 +94,14 @@
     </section>
     <div class="polar" id="polarMsg" hidden></div>
     <section class="grid" id="cards" aria-label="الصلوات"></section>
-    <section class="panel">
+    <section class="panel legend-panel">
       <div class="panel-head"><h3>دلالة الألوان</h3></div>
       <div class="legend">
-        <div class="t-ok"><i class="dot"></i><p><b>وقت الاختيار.</b> <span>يجوز الأداء بلا حرج باتفاق.</span></p></div>
-        <div class="t-khilaf"><i class="dot"></i><p><b>منطقة خلاف.</b> <span>مختار عند بعض المذاهب، وخارج المختار عند غيرها.</span></p></div>
-        <div class="t-karaha"><i class="dot"></i><p><b>كراهة أو ضرورة.</b> <span>الصلاة أداء، ويأثم المؤخِّر بلا عذر عند المالكية والحنابلة.</span></p></div>
-        <div class="t-darura"><i class="dot"></i><p><b>بعد الحدّ.</b> <span>خروج عند من حدّ الوقت به، وضرورة عند الجمهور.</span></p></div>
+        <div class="t-ok"><i class="dot"></i><p><b>وقت الاختيار.</b> <span>يجوز الأداء بلا حرج، وهو المختار أو المستحب.</span></p></div>
+        <div class="t-jawaz"><i class="dot"></i><p><b>جواز.</b> <span>أداء بلا إثم ولا كراهة، لكنه خارج المختار.</span></p></div>
+        <div class="t-khilaf"><i class="dot"></i><p><b>منطقة خلاف.</b> <span>تختلف فيها أحكام المذاهب المختارة؛ التفصيل تحت كل حدّ.</span></p></div>
+        <div class="t-karaha"><i class="dot"></i><p><b>كراهة.</b> <span>الصلاة أداء مع الكراهة، أو كراهة وضرورة إذا اختلفت المذاهب المختارة.</span></p></div>
+        <div class="t-darura"><i class="dot"></i><p><b>ضرورة.</b> <span>الصلاة أداء، ويأثم المؤخِّر إليها بلا عذر.</span></p></div>
         <div class="t-exit"><i class="dot"></i><p><b>الخروج.</b> <span>تصير الصلاة بعده قضاءً.</span></p></div>
         <div class="t-nahy"><i class="dot"></i><p><b>وقت نهي.</b> <span>لا تُبتدأ فيه نافلة مطلقة.</span></p></div>
       </div>
@@ -108,7 +118,7 @@
       </button>
     </div>
     <div class="table-wrap"><table id="monthTable"></table></div>
-    <p class="hint">الأحمر: أوقات الخروج. الأوقات الأخرى حدود كراهة أو خلاف.</p>
+    <p class="hint">الأحمر: أوقات الخروج. لون كل عمود هو حكم ما بعد ذلك الحدّ عند المذاهب المختارة.</p>
   </section>
 
   <!-- upcoming alerts -->
@@ -180,8 +190,8 @@
         <label>زاوية العشاء (°)<input id="sCI" type="number" step="0.1" min="5" max="25"></label>
       </div>
       <div class="row2">
-        <label>بداية العصر<select id="sAsr"><option value="std">ظل المثل (الجمهور)</option><option value="hanafi">ظل المثلين (أبو حنيفة)</option></select></label>
-        <label>دخول العشاء<select id="sIsha"><option value="method">حسب الهيئة</option><option value="red">الشفق الأحمر 15°</option><option value="white">الشفق الأبيض 18°</option></select></label>
+        <label>بداية العصر<select id="sAsr"><option value="auto">حسب المذهب المختار</option><option value="std">ظل المثل (الجمهور)</option><option value="hanafi">ظل المثلين (أبو حنيفة)</option></select></label>
+        <label>دخول العشاء<select id="sIsha"><option value="auto">حسب الهيئة، والأبيض للحنفية</option><option value="method">حسب الهيئة دائماً</option><option value="red">الشفق الأحمر 15°</option><option value="white">الشفق الأبيض 18°</option></select></label>
       </div>
     </fieldset>
 
@@ -197,13 +207,17 @@
         <label>نهاية الليل<select id="sNightEnd"><option value="fajr">طلوع الفجر (الجمهور)</option><option value="sunrise">طلوع الشمس</option></select></label>
         <label>احتياط (دقائق)<input id="sIht" type="number" step="1" min="0" max="10"></label>
       </div>
+      <div class="row2">
+        <label>الحمرة قبل الشروق — الشافعية (° تحت الأفق)<input id="sHumra" type="number" step="0.5" min="1" max="6"></label>
+        <label>مختار المغرب — المالكية (دقائق بعد الغروب)<input id="sMaghribMin" type="number" step="1" min="5" max="45"></label>
+      </div>
       <label>البلاد ذات العرض العالي<select id="sHigh">
         <option value="angle">نسبة الزاوية من الليل (الأشهر)</option>
         <option value="seventh">سُبع الليل</option>
         <option value="mid">منتصف الليل</option>
         <option value="none">بلا تعديل</option>
       </select></label>
-      <p class="note">الإسفار 6° يوافق بداية الشفق المدني حين تتميّز الوجوه. الاصفرار 5° هو المعتمد في التقاويم التركية، ويقابله الإشراق صباحاً. اشتباك النجوم 8° اجتهاد يحتاج رصداً.</p>
+      <p class="note">الإسفار 6° يوافق بداية الشفق المدني حين تتميّز الوجوه. الاصفرار 5° هو المعتمد في التقاويم التركية، ويقابله الإشراق صباحاً. اشتباك النجوم 8° والحمرة 3° اجتهاد يحتاج رصداً. مختار المغرب عند المالكية بقدر الطهارة والأذان والإقامة وصلاة ثلاث ركعات، و15 دقيقة تقدير.</p>
     </fieldset>
 
     <fieldset>

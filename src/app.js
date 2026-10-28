@@ -1,5 +1,6 @@
 // App shell: view state, rendering orchestration, navigation, timers.
-import { cfg, loc, saveSettings, bumpVersion } from './core/state.js';
+import { cfg, loc, saveSettings, bumpVersion, hanafiAsr } from './core/state.js';
+import { MADHABS } from './data/rulings.js';
 import { build, methodParams } from './core/compute.js';
 import { ensureTimeline, currentPhase, phaseId } from './core/timeline.js';
 import { todayLocal, addDays, addMonths, sameDay, localMidnight, gregString, hijriString, isoDate, parseIsoDate, digits } from './core/time.js';
@@ -66,14 +67,23 @@ function renderMethodLine() {
     .map(([k, v]) => ADJUST_LABELS[k] + ' ' + (v > 0 ? '+' : '−') + digits(Math.abs(v)) + ' د');
   $('#methodLine').textContent = 'طريقة الحساب: ' + M.name + ' · الفجر ' + M.fajrAngle + '° · العشاء ' + M.ishaDesc
     + (adj.length ? ' · تعديل رسمي: ' + adj.join('، ') : '')
-    + ' · العصر ' + (cfg.asr === 'hanafi' ? 'ظل المثلين' : 'ظل المثل')
+    + ' · العصر ' + (hanafiAsr() ? 'ظل المثلين' : 'ظل المثل')
+    + ' · الأحكام: ' + MADHABS.filter(m => cfg.madhabs.includes(m.key)).map(m => m.name).join('، ')
     + ' · ' + loc.lat.toFixed(3) + '، ' + loc.lon.toFixed(3) + ' · ' + loc.tz;
+}
+
+function renderFilters() {
+  $('#madhabBar').innerHTML = MADHABS.map(m =>
+    '<button type="button" data-m="' + m.key + '" aria-pressed="' + cfg.madhabs.includes(m.key) + '">' + m.name + '</button>').join('');
+  $('#detailsBtn').setAttribute('aria-pressed', String(!!cfg.details));
+  $('#app').classList.toggle('compact', !cfg.details);
 }
 
 function renderAll() {
   $('#locName').textContent = loc.name + (loc.country ? '، ' + loc.country : '');
   $('#nowCity').textContent = loc.name;
   $('#app').classList.toggle('nu-arab', cfg.nu === 'arab');
+  renderFilters();
   ensureTimeline(true);
   renderDateHead();
   const isDay = view.mode === 'day';
@@ -133,7 +143,27 @@ function initNavigation() {
   };
   $('#csvBtn').onclick = () => exportCsv(view.sel);
 
-  // keyboard: ← next, → previous (RTL), T today, M toggles day/month
+  // madhab filter: toggle one; at least one stays selected
+  $('#madhabBar').addEventListener('click', e => {
+    const b = e.target.closest('button[data-m]');
+    if (!b) return;
+    const k = b.dataset.m, on = cfg.madhabs.includes(k);
+    if (on && cfg.madhabs.length === 1) {
+      toast({ title: 'اختر مذهباً واحداً على الأقل', seg: 'idle' });
+      return;
+    }
+    cfg.madhabs = MADHABS.map(m => m.key).filter(x => (x === k ? !on : cfg.madhabs.includes(x)));
+    changed();
+    $('#madhabBar button[data-m="' + k + '"]')?.focus();
+  });
+  // details: display only, no recalculation
+  $('#detailsBtn').onclick = () => {
+    cfg.details = !cfg.details;
+    saveSettings();
+    renderFilters();
+  };
+
+  // keyboard: ← next, → previous (RTL), T today, M toggles day/month, D details
   document.addEventListener('keydown', e => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     if (document.querySelector('dialog[open]')) return;
@@ -142,6 +172,7 @@ function initNavigation() {
     else if (e.key === 'ArrowRight') shift(-1);
     else if (e.code === 'KeyT') goToday(); // physical key, so it works on Arabic layouts too
     else if (e.code === 'KeyM') setMode(view.mode === 'day' ? 'month' : 'day');
+    else if (e.code === 'KeyD') $('#detailsBtn').click();
     else return;
     e.preventDefault();
   });

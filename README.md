@@ -62,13 +62,15 @@ tests/
 | Add a city | append to `src/data/cities.js` (append, don't reorder: saved choices store the index). The picker groups cities by country automatically, and `npm test` checks every entry's time zone, coordinates and method |
 | Add / adjust a calculation method | `src/data/methods.js` |
 | Default settings or allowed ranges | `DEFAULTS` / `LIMITS` in `src/core/state.js` |
-| Which boundaries exist and their type/color | `computeBuild()` in `src/core/compute.js` |
+| A boundary's ruling and color per madhab | the `by` table of that mark in `src/data/rulings.js` |
+| How selected madhabs combine into one color | `combineSegments()` in `src/data/rulings.js` |
+| Which boundaries exist | `computeBuild()` in `src/core/compute.js` |
 | Colors / fonts / dark theme | `src/styles/tokens.css` |
 | Month table columns | `COLUMNS` in `src/ui/month.js` |
 
 ## Keyboard
 
-`←` next day/month · `→` previous · `T` today · `M` switch day/month
+`←` next day/month · `→` previous · `T` today · `M` switch day/month · `D` show/hide details
 
 ## Notes
 

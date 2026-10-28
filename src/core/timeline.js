@@ -32,10 +32,11 @@ export function ensureTimeline(force = false) {
       }
       for (const m of ms) {
         if (!Number.isFinite(m.at)) continue;
-        if (m.kind === 'exit' || m.kind === 'exit2') {
+        if (m.kind === 'exit') {
           alerts.push({ when: m.at - cfg.exitB * MIN, at: m.at, lvl: 'exit', seg: 'exit', title: 'خروج ' + p.name + ' بعد ' + digits(cfg.exitB) + ' د', body: m.label + ' عند ' + fmtTime(m.at), id: 'x' + m.key + m.at });
           alerts.push({ when: m.at, at: m.at, lvl: 'passed', quiet: true, seg: 'exit', title: 'خرج: ' + m.short, body: p.name + ' · ' + fmtTime(m.at), id: 'p' + m.key + m.at });
-        } else if (m.kind === 'bound' && m.seg) {
+        } else if (m.kind === 'bound' && m.seg && m.seg !== 'ok') {
+          // warn only where the selected madhabs see a change (not e.g. Hanafi isfar)
           alerts.push({ when: m.at - cfg.karB * MIN, at: m.at, lvl: 'karaha', seg: m.seg, title: m.short + ' بعد ' + digits(cfg.karB) + ' د', body: p.name + ': ' + m.label + ' عند ' + fmtTime(m.at), id: 'k' + m.key + m.at });
         } else if (m.kind === 'start' && cfg.entry) {
           alerts.push({ when: m.at, at: m.at, lvl: 'entry', seg: 'ok', title: 'دخل وقت ' + p.name, body: fmtTime(m.at), id: 'e' + m.key + m.at });
@@ -68,7 +69,6 @@ export const isPhaseMark = (ph, dt, m) => !!ph && sameDay(ph.dt, dt) && ph.mark.
 export function afterText(ph) {
   const n = ph.next;
   if (n.kind === 'exit') return 'خروج وقت ' + ph.prayer;
-  if (n.kind === 'exit2') return 'الخروج الكلي';
   if (n.kind === 'start') return 'دخول الوقت';
   if (n.kind === 'end') return 'تنتهي الكراهة';
   return n.seg && SEGMENTS[n.seg] ? 'يبدأ: ' + SEGMENTS[n.seg].pill : '';

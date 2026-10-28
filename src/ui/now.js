@@ -49,7 +49,7 @@ export function renderNow() {
     $('#nowDesc').textContent = ph.mark.desc || '';
     $('#countLabel').innerHTML = 'يبقى حتى <b>' + esc(ph.next.short) + '</b>';
     $('#count').textContent = hms(ph.to - now);
-    const nextIsExit = ph.next.kind === 'exit' || ph.next.kind === 'exit2';
+    const nextIsExit = ph.next.kind === 'exit';
     setType(card, nextIsExit && ph.to - now < cfg.exitB * MIN ? 'exit' : ph.seg);
     $('#countSub').textContent = fmtTime(ph.to) + ' · ' + afterText(ph);
     setProgress(100 * clamp((now - ph.from) / (ph.to - ph.from), 0, 1));

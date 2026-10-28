@@ -5,7 +5,7 @@
 .eyebrow .num{font-size:15px;color:var(--ink)}
 .now-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .now-title h2{font-family:var(--f-display);font-size:38px;font-weight:700;line-height:1.15}
-.now-desc{color:var(--muted);max-width:60ch}
+.now-desc{color:var(--muted);max-width:60ch;white-space:pre-line}
 
 .now-count{min-width:0;display:grid;gap:6px;padding:16px 18px;border-radius:16px;background:var(--surface-2)}
 .count-label{font-size:14px;color:var(--muted)}

@@ -4,7 +4,7 @@
   --accent:#2c3a94; --accent-ink:#ffffff;
 
   /* boundary types */
-  --ok:#1b875a; --khilaf:#9c7b0c; --karaha:#cc6116; --darura:#bb2f3b; --nahy:#7449bf; --idle:#9aa0b6; --exit:#c4232d;
+  --ok:#1b875a; --jawaz:#2a74b0; --khilaf:#9c7b0c; --karaha:#cc6116; --darura:#bb2f3b; --nahy:#7449bf; --idle:#9aa0b6; --exit:#c4232d;
 
   --f-display:"Reem Kufi","IBM Plex Sans Arabic","Noto Kufi Arabic",Tahoma,sans-serif;
   --f-body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;
@@ -18,17 +18,17 @@
   :root:not([data-theme="light"]){
     --bg:#0c0f1e; --surface:#151a2d; --surface-2:#1d2339; --ink:#e7e9f3; --muted:#9aa1bb; --line:#272e4a;
     --accent:#93a0ff; --accent-ink:#0c0f1e;
-    --ok:#3cc48a; --khilaf:#d9b63e; --karaha:#f18a3e; --darura:#ec5b67; --nahy:#a985f2; --idle:#6c7392; --exit:#ff5d61;
+    --ok:#3cc48a; --jawaz:#6aaef0; --khilaf:#d9b63e; --karaha:#f18a3e; --darura:#ec5b67; --nahy:#a985f2; --idle:#6c7392; --exit:#ff5d61;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0c0f1e; --surface:#151a2d; --surface-2:#1d2339; --ink:#e7e9f3; --muted:#9aa1bb; --line:#272e4a;
   --accent:#93a0ff; --accent-ink:#0c0f1e;
-  --ok:#3cc48a; --khilaf:#d9b63e; --karaha:#f18a3e; --darura:#ec5b67; --nahy:#a985f2; --idle:#6c7392; --exit:#ff5d61;
+  --ok:#3cc48a; --jawaz:#6aaef0; --khilaf:#d9b63e; --karaha:#f18a3e; --darura:#ec5b67; --nahy:#a985f2; --idle:#6c7392; --exit:#ff5d61;
   color-scheme:dark;
 }
 
 /* type → color: any element with .t-<type> exposes --c */
-.t-ok{--c:var(--ok)} .t-khilaf{--c:var(--khilaf)} .t-karaha{--c:var(--karaha)} .t-darura{--c:var(--darura)}
-.t-nahy{--c:var(--nahy)} .t-idle{--c:var(--idle)} .t-exit{--c:var(--exit)}
+.t-ok{--c:var(--ok)} .t-jawaz{--c:var(--jawaz)} .t-khilaf{--c:var(--khilaf)} .t-karaha{--c:var(--karaha)} .t-darura{--c:var(--darura)}
+.t-kd{--c:var(--karaha)} .t-nahy{--c:var(--nahy)} .t-idle,.t-free,.t-prev{--c:var(--idle)} .t-exit{--c:var(--exit)}

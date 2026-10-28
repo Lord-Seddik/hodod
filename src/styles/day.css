@@ -9,6 +9,13 @@
 .datenav .date span{font-size:13px;color:var(--muted)}
 .datenav input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 8px;min-height:34px}
 
+/* madhab filter + details toggle */
+.filters{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.madhabs{display:flex;gap:6px;flex-wrap:wrap}
+.madhabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;min-height:34px;cursor:pointer;font-weight:600;color:var(--muted);transition:background-color .15s,border-color .15s}
+.madhabs button:hover{border-color:var(--accent)}
+.madhabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
 .day-view{display:grid;gap:18px}
 
 /* sun-path strip */
@@ -47,6 +54,21 @@
 .mk.exit2 b{color:var(--darura)}
 .mk.minor{opacity:.78}
 .mk.cur{outline:1.5px dashed var(--accent);outline-offset:-1.5px}
+
+/* per-madhab verdicts under a boundary */
+.mz-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.mz{font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);white-space:nowrap}
+.mz-notes{display:grid;gap:2px;margin-top:4px}
+.mz-note{display:block;font-size:12.5px;line-height:1.55;color:var(--ink);opacity:.85}
+.mz-note i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-inline-end:6px;vertical-align:1px}
+
+/* compact view: hide sub-lines, notes, and boundaries that change nothing */
+.compact .mk .lbl small,
+.compact .mz-notes,
+.compact .mk.quiet,
+.compact .mk.minor,
+.compact .legend-panel{display:none}
+.compact .mk{padding-block:5px}
 
 .polar{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
 .polar p{margin-top:6px}

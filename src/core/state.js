@@ -1,24 +1,33 @@
 // User settings (persisted) and the active location.
 import { CITIES } from '../data/cities.js';
 import { METHODS } from '../data/methods.js';
+import { MADHABS } from '../data/rulings.js';
+
+const ALL_MADHABS = MADHABS.map(m => m.key);
 
 export const DEFAULTS = {
+  v: 2, // settings format version
   // location
   cityIdx: -1, custom: null,
-  // calculation
-  method: 'AUTO', customF: 18, customI: 17, asr: 'std', isha: 'method',
+  // madhabs whose rulings are shown (at least one)
+  madhabs: ALL_MADHABS,
+  // calculation; 'auto' follows the madhab (Hanafi only → two shadows, white twilight)
+  method: 'AUTO', customF: 18, customI: 17, asr: 'auto', isha: 'auto',
   // boundary definitions
   isfar: 6, sunAlt: 5, stars: 8, istiwa: 5, nightEnd: 'fajr', highLat: 'angle', iht: 0,
+  humra: 3,       // Shafi'i: redness before sunrise, ° below the horizon
+  maghribMin: 15, // Maliki: minutes after sunset for the narrow chosen Maghrib time
   // alerts
   alerts: true, exitB: 15, karB: 10, entry: false, sound: false, notify: false,
   // display
-  h12: '24', nu: 'latn', theme: 'auto',
+  h12: '24', nu: 'latn', theme: 'auto', details: true,
 };
 
 /** [min, max] for numeric settings; also used to sanitize stored values. */
 export const LIMITS = {
   customF: [5, 25], customI: [5, 25], isfar: [1, 12], sunAlt: [1, 15], stars: [4, 14],
   istiwa: [0, 20], iht: [0, 10], exitB: [1, 120], karB: [1, 120],
+  humra: [1, 6], maghribMin: [5, 45],
 };
 
 const STORE_KEY = 'hudud-alwaqt-v1';
@@ -33,11 +42,21 @@ function sanitize() {
   }
   if (cfg.method !== 'AUTO' && !METHODS[cfg.method]) cfg.method = 'AUTO';
   if (!CITIES[cfg.cityIdx]) cfg.cityIdx = -1;
+  if (!['auto', 'method', 'red', 'white'].includes(cfg.isha)) cfg.isha = 'auto';
+  if (!['auto', 'std', 'hanafi'].includes(cfg.asr)) cfg.asr = 'auto';
+  const picked = Array.isArray(cfg.madhabs) ? ALL_MADHABS.filter(k => cfg.madhabs.includes(k)) : [];
+  cfg.madhabs = picked.length ? picked : ALL_MADHABS;
 }
 
 try {
   const raw = localStorage.getItem(STORE_KEY);
-  if (raw) Object.assign(cfg, JSON.parse(raw));
+  if (raw) {
+    const saved = JSON.parse(raw);
+    // v1 saved asr:'std' / isha:'method' as defaults; 'auto' gives the same times with all madhabs
+    if (!saved.v && saved.asr === 'std') saved.asr = 'auto';
+    if (!saved.v && saved.isha === 'method') saved.isha = 'auto';
+    Object.assign(cfg, saved, { v: DEFAULTS.v });
+  }
 } catch { /* storage unavailable */ }
 sanitize();
 
@@ -95,6 +114,14 @@ export function applyLocation() {
 applyLocation();
 
 export const methodKey = () => (cfg.method === 'AUTO' ? loc.method : cfg.method);
+
+const hanafiOnly = () => cfg.madhabs.length === 1 && cfg.madhabs[0] === 'hanafi';
+
+/** Asr starts at two shadow lengths: chosen explicitly, or 'auto' with only Hanafi selected. */
+export const hanafiAsr = () => cfg.asr === 'hanafi' || (cfg.asr === 'auto' && hanafiOnly());
+
+/** Isha rule in effect: 'method' | 'red' | 'white'; 'auto' → white twilight (Abu Hanifa) with only Hanafi selected. */
+export const ishaRule = () => (cfg.isha === 'auto' ? (hanafiOnly() ? 'white' : 'method') : cfg.isha);
 
 /** Bumped whenever settings/location change; computation caches key on it. */
 export const version = { n: 0 };

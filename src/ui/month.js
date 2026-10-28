@@ -1,20 +1,32 @@
 // Month ledger table + CSV export.
-import { cfg, loc } from '../core/state.js';
+import { loc } from '../core/state.js';
 import { build } from '../core/compute.js';
 import { fmtTime, fmtCsvTime, gregString, hijriString, hijriNumeric, daysInMonth, sameDay, todayLocal, isoDate } from '../core/time.js';
 import { $, esc } from './dom.js';
 import { toast } from './toast.js';
 
-// [mark key, header, type]
+// [mark key, header]
 const COLUMNS = [
-  ['fajr', 'الفجر', 'ok'], ['isfar', 'الإسفار', 'khilaf'], ['sunrise', 'الشروق', 'exit'],
-  ['dhuhr', 'الظهر', 'ok'], ['asr', 'العصر', 'ok'], ['asr2', 'ظل المثلين', 'khilaf'], ['isfirar', 'الاصفرار', 'karaha'],
-  ['maghrib', 'المغرب', 'ok'], ['stars', 'الاشتباك', 'karaha'], ['isha', 'العشاء', 'ok'], ['third', 'ثلث الليل', 'khilaf'], ['half', 'نصف الليل', 'darura'],
+  ['fajr', 'الفجر'], ['isfar', 'الإسفار'], ['sunrise', 'الشروق'],
+  ['dhuhr', 'الظهر'], ['asr', 'العصر'], ['asr2', 'ظل المثلين'], ['isfirar', 'الاصفرار'],
+  ['maghrib', 'المغرب'], ['stars', 'الاشتباك'], ['isha', 'العشاء'], ['third', 'ثلث الليل'], ['half', 'نصف الليل'],
 ];
 
-// Hanafi Asr starts at the 2× shadow, so the separate column is redundant
-const columns = () => (cfg.asr === 'hanafi' ? COLUMNS.filter(c => c[0] !== 'asr2') : COLUMNS);
-const isExitCol = c => c[2] === 'exit' || c[0] === 'half';
+/**
+ * Columns for the current settings. Each column's color is the type that
+ * mark opens for the selected madhabs; marks absent from the layout
+ * (asr2 when Asr starts at two shadows) are dropped.
+ */
+function columns(rows) {
+  const ref = rows.find(r => !r.B.polar)?.B;
+  const marks = {};
+  ref?.prayers.forEach(p => p.marks.forEach(m => { marks[m.key] = m; }));
+  return COLUMNS.filter(([k]) => !ref || marks[k]).map(([key, head]) => {
+    const m = marks[key];
+    const exit = m?.kind === 'exit';
+    return { key, head, exit, type: exit ? 'exit' : (m?.seg || 'ok') };
+  });
+}
 
 function monthRows(sel) {
   const rows = [];
@@ -26,13 +38,13 @@ function monthRows(sel) {
 }
 
 export function renderMonth(sel) {
-  const today = todayLocal(), cols = columns();
+  const today = todayLocal(), rows = monthRows(sel), cols = columns(rows);
   $('#monthTitle').textContent = gregString(sel, { month: 'long', year: 'numeric' }) + ' · ' + loc.name;
-  const head = '<thead><tr><th scope="col">اليوم</th>' + cols.map(c => '<th scope="col" class="t-' + c[2] + '"><i></i>' + c[1] + '</th>').join('') + '</tr></thead>';
-  const body = monthRows(sel).map(({ dt, B }) => {
+  const head = '<thead><tr><th scope="col">اليوم</th>' + cols.map(c => '<th scope="col" class="t-' + c.type + '"><i></i>' + c.head + '</th>').join('') + '</tr></thead>';
+  const body = rows.map(({ dt, B }) => {
     const cells = cols.map(c => {
-      const v = B.polar ? NaN : B.T[c[0]];
-      return '<td class="num' + (isExitCol(c) ? ' x' : '') + '">' + esc(fmtTime(v)) + '</td>';
+      const v = B.polar ? NaN : B.T[c.key];
+      return '<td class="num' + (c.exit ? ' x' : '') + '">' + esc(fmtTime(v)) + '</td>';
     }).join('');
     const isToday = sameDay(dt, today);
     return '<tr' + (isToday ? ' class="today" aria-current="date"' : '') + '><th scope="row">'
@@ -48,10 +60,10 @@ export function renderMonth(sel) {
 const csvCell = v => (/[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
 
 export function exportCsv(sel) {
-  const cols = columns();
-  const lines = [['التاريخ', 'الهجري'].concat(cols.map(c => c[1])).map(csvCell).join(',')];
-  monthRows(sel).forEach(({ dt, B }) => {
-    const times = cols.map(c => fmtCsvTime(B.polar ? NaN : B.T[c[0]]));
+  const rows = monthRows(sel), cols = columns(rows);
+  const lines = [['التاريخ', 'الهجري'].concat(cols.map(c => c.head)).map(csvCell).join(',')];
+  rows.forEach(({ dt, B }) => {
+    const times = cols.map(c => fmtCsvTime(B.polar ? NaN : B.T[c.key]));
     lines.push([isoDate(dt), hijriNumeric(dt)].concat(times).map(csvCell).join(','));
   });
   const fname = 'hudud-' + loc.name.replace(/\s+/g, '-') + '-' + sel.y + '-' + String(sel.m).padStart(2, '0') + '.csv';

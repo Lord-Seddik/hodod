@@ -2,41 +2,95 @@
 // edited without touching the calculation code.
 //
 // Each mark: label (card row title), short (used in countdown/alerts),
-// sub (small line under the label; string or fn(ctx)), desc (shown in the
-// "now" gauge while this phase is current).
-// ctx = { cfg, fajrAngle, ishaDesc, est(key) } — est(key) returns " · تقديري"
-// when that time was estimated for high latitudes.
+// sub (small line under the label; string or fn(ctx)),
+// by: the ruling per madhab for the time from this mark until the next one:
+//   { hanafi: { seg, note }, maliki: …, shafii: …, hanbali: … }
+//   ('all' applies to every madhab). seg is a phase type from SEGMENTS.
+// Marks without `by` (exits, end of a forbidden time) open no phase.
+// ctx = { cfg, fajrAngle, ishaDesc, est(key), has(madhab), hanafiAsr }
+//   est(key) returns " · تقديري" when that time was estimated for high latitudes.
 
 export const PRAYER_NAMES = {
   fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء',
 };
 
-// phase types (colors live in styles/tokens.css as --ok, --khilaf, …)
+export const MADHABS = [
+  { key: 'hanafi', name: 'الحنفية', label: 'حنفي' },
+  { key: 'maliki', name: 'المالكية', label: 'مالكي' },
+  { key: 'shafii', name: 'الشافعية', label: 'شافعي' },
+  { key: 'hanbali', name: 'الحنابلة', label: 'حنبلي' },
+];
+
+// phase types (colors live in styles/tokens.css as --ok, --jawaz, …)
 export const SEGMENTS = {
   ok:     { pill: 'وقت اختيار' },
+  jawaz:  { pill: 'جواز' },
   khilaf: { pill: 'منطقة خلاف' },
-  karaha: { pill: 'كراهة أو ضرورة' },
-  darura: { pill: 'بعد الحدّ' },
+  karaha: { pill: 'كراهة' },
+  darura: { pill: 'ضرورة' },
+  kd:     { pill: 'كراهة أو ضرورة' }, // selected madhabs split between karaha and darura
   nahy:   { pill: 'وقت نهي' },
+  free:   { pill: 'ليس وقت نهي' },   // where one madhab sees no forbidden time
+  prev:   { pill: 'لم يدخل بعد' },   // this prayer has not started yet for that madhab
   idle:   { pill: 'لا فريضة' },
 };
+
+/**
+ * Combine the selected madhabs' types for one phase:
+ * all agree → that type; all karaha/darura → kd; nahy vs. not-nahy → nahy
+ * (the cautious reading); otherwise → khilaf.
+ */
+export function combineSegments(types) {
+  const set = new Set(types);
+  if (set.size === 1) return types[0];
+  if ([...set].every(t => t === 'karaha' || t === 'darura')) return 'kd';
+  if (set.has('nahy') && [...set].every(t => t === 'nahy' || t === 'free')) return 'nahy';
+  return 'khilaf';
+}
+
+const DARURA_SIN = 'وقت ضرورة يأثم المؤخِّر إليه بلا عذر، والصلاة أداء.';
 
 export const MARKS = {
   // ── الفجر
   fajr: {
     label: 'دخول الفجر', short: 'دخول الفجر',
     sub: c => 'الفجر الصادق · ' + c.fajrAngle + '°' + c.est('fajr'),
-    desc: 'يجوز الأداء بلا حرج باتفاق المذاهب.',
+    by: {
+      hanafi: { seg: 'ok', note: 'وقت أداء بلا حرج، والأفضل تأخيرها إلى الإسفار.' },
+      maliki: { seg: 'ok', note: 'وقت اختيار، والأفضل التغليس بها.' },
+      shafii: { seg: 'ok', note: 'وقت اختيار، والأفضل التغليس بها.' },
+      hanbali: { seg: 'ok', note: 'وقت اختيار، والأفضل التغليس بها.' },
+    },
   },
   isfar: {
-    label: 'الإسفار — نهاية المختار عند المالكية', short: 'الإسفار',
-    sub: c => 'ضوء ' + c.cfg.isfar + '° تتراءى فيه الوجوه · مستحب عند الحنفية',
-    desc: 'الصلاة أداء. يأثم المؤخِّر إلى هنا بلا عذر عند المالكية، وهو جواز بلا كراهة عند الشافعية حتى تظهر الحمرة قُبيل الشروق، ووقت مستحب عند الحنفية، ووقت أداء لا ضرورة فيه عند الحنابلة.',
+    label: 'الإسفار', short: 'الإسفار',
+    sub: c => 'ضوء ' + c.cfg.isfar + '° تتراءى فيه الوجوه',
+    by: {
+      hanafi: { seg: 'ok', note: 'وقت مستحب؛ يُستحب الإسفار بالفجر.' },
+      maliki: { seg: 'darura', note: 'انتهى المختار، وما بعده ' + DARURA_SIN },
+      shafii: { seg: 'jawaz', note: 'خرج وقت الاختيار، وهو جواز بلا كراهة حتى تظهر الحمرة قُبيل الشروق.' },
+      hanbali: { seg: 'ok', note: 'لا ضرورة لوقت الفجر، فهو وقت أداء إلى الشروق.' },
+    },
+  },
+  humra: { // shown only when the Shafi'i school is selected
+    label: 'الحمرة قُبيل الشروق', short: 'الحمرة',
+    sub: c => 'انخفاض ' + c.cfg.humra + '° (اجتهادي)' + c.est('humra'),
+    by: {
+      hanafi: { seg: 'ok', note: 'يستمر الوقت المستحب إلى الشروق.' },
+      maliki: { seg: 'darura', note: 'يستمر وقت الضرورة إلى الشروق.' },
+      shafii: { seg: 'karaha', note: 'وقت كراهة إلى الشروق، والصلاة أداء.' },
+      hanbali: { seg: 'ok', note: 'يستمر وقت الأداء إلى الشروق.' },
+    },
   },
   sunrise: {
-    label: 'الشروق — الخروج الكلي', short: 'الشروق',
+    label: 'الشروق — خروج الفجر', short: 'الشروق',
     sub: 'بعده تصير الصلاة قضاءً',
-    desc: 'خرج وقت الفجر. لا تُبتدأ نافلة مطلقة حتى ترتفع الشمس قيد رمح.',
+    by: {
+      hanafi: { seg: 'nahy', note: 'خرج وقت الفجر. لا تصح فيه صلاة ولو قضاءً حتى ترتفع الشمس.' },
+      maliki: { seg: 'nahy', note: 'خرج وقت الفجر. لا تُبتدأ نافلة مطلقة حتى ترتفع الشمس قيد رمح.' },
+      shafii: { seg: 'nahy', note: 'خرج وقت الفجر. لا تُبتدأ نافلة مطلقة حتى ترتفع الشمس قيد رمح.' },
+      hanbali: { seg: 'nahy', note: 'خرج وقت الفجر. لا تُبتدأ نافلة مطلقة حتى ترتفع الشمس قيد رمح.' },
+    },
   },
   ishraq: {
     label: 'الإشراق — انتهاء وقت النهي', short: 'الإشراق',
@@ -45,52 +99,78 @@ export const MARKS = {
 
   // ── الظهر
   istiwa: {
-    label: 'الاستواء — وقت نهي', short: 'الاستواء',
+    label: 'الاستواء', short: 'الاستواء',
     sub: 'قُبيل الزوال (تقديري)',
-    desc: 'وقت نهي قصير قبيل الزوال.',
+    by: {
+      hanafi: { seg: 'nahy', note: 'وقت نهي لا تصح فيه صلاة ولو قضاءً.' },
+      maliki: { seg: 'free', note: 'ليس وقت نهي في المشهور.' },
+      shafii: { seg: 'nahy', note: 'وقت نهي عن النافلة المطلقة إلا يوم الجمعة.' },
+      hanbali: { seg: 'nahy', note: 'وقت نهي عن النافلة المطلقة.' },
+    },
+    friday: {
+      shafii: { seg: 'free', note: 'يوم الجمعة: لا يُكره التنفل عند الاستواء.' },
+    },
   },
   dhuhr: {
     label: 'الزوال — دخول الظهر', short: 'دخول الظهر',
     sub: 'ميل الشمس عن كبد السماء',
-    desc: 'وقت الظهر كله وقت اختيار عند الجمهور.',
+    by: {
+      hanafi: { seg: 'ok', note: 'وقت اختيار، ويمتد عند أبي حنيفة حتى يصير ظل الشيء مثليه.' },
+      maliki: { seg: 'ok', note: 'مختار حتى يصير ظل الشيء مثله، ثم ضروري إلى الغروب.' },
+      shafii: { seg: 'ok', note: 'وقت اختيار حتى يصير ظل الشيء مثله.' },
+      hanbali: { seg: 'ok', note: 'وقت اختيار حتى يصير ظل الشيء مثله.' },
+    },
   },
   dhuhrExit: {
-    label: 'الخروج — دخول العصر', short: 'خروج الظهر',
-    sub: 'ظل المثل · وعند المالكية يمتد الضروري إلى الغروب',
-  },
-  dhuhrExitHanafi: {
-    label: 'الخروج — دخول العصر', short: 'خروج الظهر',
-    sub: 'ظل المثلين، قول أبي حنيفة',
+    label: 'خروج الظهر — دخول العصر', short: 'خروج الظهر',
+    sub: c => (c.hanafiAsr ? 'ظل المثلين' : 'ظل المثل')
+      + (c.has('maliki') ? ' · وعند المالكية يمتد الضروري إلى الغروب' : '')
+      + (c.has('hanafi') && !c.hanafiAsr ? ' · وعند أبي حنيفة يمتد إلى ظل المثلين' : ''),
   },
 
   // ── العصر
-  asr: {
-    label: 'دخول العصر', short: 'دخول العصر',
-    sub: 'ظل المثل · عند الجمهور',
-    desc: 'وقت اختيار عند الجمهور. وهو عند أبي حنيفة من وقت الظهر حتى يصير ظل كل شيء مثليه.',
+  asr: { // at one shadow length (majority)
+    label: 'ظل المثل — دخول العصر', short: 'دخول العصر',
+    sub: 'ظل المثل',
+    by: {
+      hanafi: { seg: 'prev', note: 'لم يدخل العصر عند أبي حنيفة؛ هو من وقت الظهر حتى ظل المثلين.' },
+      maliki: { seg: 'ok', note: 'وقت اختيار حتى الاصفرار.' },
+      shafii: { seg: 'ok', note: 'وقت اختيار حتى ظل المثلين.' },
+      hanbali: { seg: 'ok', note: 'وقت اختيار حتى ظل المثلين.' },
+    },
   },
-  asrHanafi: {
-    label: 'دخول العصر', short: 'دخول العصر',
+  asrHanafi: { // at two shadow lengths (Abu Hanifa)
+    label: 'ظل المثلين — دخول العصر', short: 'دخول العصر',
     sub: 'ظل المثلين، قول أبي حنيفة',
-    desc: 'وقت مستحب عند الحنفية ما لم تتغير الشمس.',
+    by: {
+      hanafi: { seg: 'ok', note: 'وقت مستحب ما لم تتغير الشمس.' },
+      maliki: { seg: 'ok', note: 'وقت اختيار حتى الاصفرار.' },
+      shafii: { seg: 'jawaz', note: 'خرج وقت الاختيار، وهو جواز بلا كراهة حتى الاصفرار.' },
+      hanbali: { seg: 'darura', note: 'انتهى المختار، وما بعده ' + DARURA_SIN },
+    },
   },
   asr2: {
-    label: 'ظل المثلين — نهاية المختار عند الشافعية والحنابلة', short: 'ظل المثلين',
-    sub: 'بعده مختار عند المالكية، وضرورة عند الحنابلة',
-    desc: 'مختار عند المالكية، وجواز عند الشافعية، وضرورة يأثم المؤخِّر إليها بلا عذر عند الحنابلة.',
+    label: 'ظل المثلين', short: 'ظل المثلين',
+    sub: 'مصير ظل الشيء مثليه',
+    by: {
+      hanafi: { seg: 'ok', note: 'دخل العصر عند أبي حنيفة، وهو وقت مستحب ما لم تتغير الشمس.' },
+      maliki: { seg: 'ok', note: 'وقت اختيار حتى الاصفرار.' },
+      shafii: { seg: 'jawaz', note: 'خرج وقت الاختيار، وهو جواز بلا كراهة حتى الاصفرار.' },
+      hanbali: { seg: 'darura', note: 'انتهى المختار، وما بعده ' + DARURA_SIN },
+    },
   },
   isfirar: {
-    label: 'الاصفرار — وقت الكراهة', short: 'الاصفرار',
+    label: 'الاصفرار — تغيّر الشمس', short: 'الاصفرار',
     sub: c => 'ارتفاع الشمس ' + c.cfg.sunAlt + '°' + c.est('isfirar'),
-    desc: 'يأثم المؤخِّر إلى هنا بلا عذر عند المالكية والحنابلة، ومكروه تحريماً عند الحنفية، ومكروه عند الشافعية. وهي أداء.',
-  },
-  isfirarHanafi: {
-    label: 'تغيّر الشمس — كراهة تحريمية', short: 'الاصفرار',
-    sub: c => 'ارتفاع الشمس ' + c.cfg.sunAlt + '°' + c.est('isfirar'),
-    desc: 'تأخير العصر إلى هنا مكروه تحريماً عند الحنفية، ويأثم به عند المالكية والحنابلة. وهي أداء.',
+    by: {
+      hanafi: { seg: 'karaha', note: 'تأخير العصر إلى تغيّر الشمس مكروه تحريماً، وهي أداء.' },
+      maliki: { seg: 'darura', note: 'انتهى المختار، وما بعده ' + DARURA_SIN },
+      shafii: { seg: 'karaha', note: 'وقت كراهة، والصلاة أداء.' },
+      hanbali: { seg: 'darura', note: DARURA_SIN },
+    },
   },
   sunset: {
-    label: 'الغروب — الخروج الكلي', short: 'الغروب',
+    label: 'الغروب — خروج العصر', short: 'الغروب',
     sub: 'بعده تصير الصلاة قضاءً',
   },
 
@@ -98,36 +178,71 @@ export const MARKS = {
   maghrib: {
     label: 'دخول المغرب', short: 'دخول المغرب',
     sub: 'غروب قرص الشمس',
-    desc: 'السنة تعجيل المغرب. ووقتها مضيّق عند المالكية والشافعي في الجديد.',
+    by: {
+      hanafi: { seg: 'ok', note: 'السنة تعجيلها.' },
+      maliki: { seg: 'ok', note: 'مختارها مضيّق بقدر الطهارة والأذان والإقامة والصلاة، ثم ضروري إلى الفجر.' },
+      shafii: { seg: 'ok', note: 'السنة تعجيلها، ويمتد وقتها إلى مغيب الشفق على المعتمد.' },
+      hanbali: { seg: 'ok', note: 'السنة تعجيلها.' },
+    },
+  },
+  maghribMukhtar: { // shown only when the Maliki school is selected
+    label: 'نهاية مختار المغرب عند المالكية', short: 'نهاية مختار المغرب',
+    sub: c => 'بعد الغروب بـ ' + c.cfg.maghribMin + ' دقيقة (تقدير قابل للتعديل)',
+    by: {
+      hanafi: { seg: 'ok', note: 'السنة تعجيلها.' },
+      maliki: { seg: 'darura', note: 'انتهى المختار المضيّق، وما بعده ضروري إلى الفجر يأثم المؤخِّر إليه بلا عذر.' },
+      shafii: { seg: 'ok', note: 'السنة تعجيلها، ويمتد وقتها إلى مغيب الشفق على المعتمد.' },
+      hanbali: { seg: 'ok', note: 'السنة تعجيلها.' },
+    },
   },
   stars: {
-    label: 'اشتباك النجوم — يُكره التأخير', short: 'اشتباك النجوم',
+    label: 'اشتباك النجوم', short: 'اشتباك النجوم',
     sub: c => 'انخفاض ' + c.cfg.stars + '° (اجتهادي)' + c.est('stars'),
-    desc: 'يُكره تأخير المغرب إلى اشتباك النجوم، وما بعده جواز عند من مدّ وقتها إلى الشفق.',
+    by: {
+      hanafi: { seg: 'karaha', note: 'يُكره تحريماً تأخيرها إلى اشتباك النجوم.' },
+      maliki: { seg: 'darura', note: 'يستمر وقت الضرورة إلى الفجر.' },
+      shafii: { seg: 'jawaz', note: 'خرج وقت الفضيلة، ويبقى الوقت إلى مغيب الشفق.' },
+      hanbali: { seg: 'jawaz', note: 'يجوز التأخير ما لم يغب الشفق، والسنة التعجيل.' },
+    },
   },
   maghribExit: {
-    label: 'مغيب الشفق — الخروج', short: 'مغيب الشفق',
-    sub: c => c.ishaDesc + c.est('isha') + ' · وعند المالكية يمتد الضروري إلى الفجر',
+    label: 'مغيب الشفق — خروج المغرب', short: 'مغيب الشفق',
+    sub: c => c.ishaDesc + c.est('isha') + (c.has('maliki') ? ' · وعند المالكية يمتد الضروري إلى الفجر' : ''),
   },
 
   // ── العشاء
   isha: {
     label: 'دخول العشاء', short: 'دخول العشاء',
     sub: c => 'مغيب الشفق · ' + c.ishaDesc,
-    desc: 'وقت اختيار باتفاق المذاهب.',
+    by: {
+      hanafi: { seg: 'ok', note: 'وقت مستحب إلى ثلث الليل.' },
+      maliki: { seg: 'ok', note: 'وقت اختيار إلى ثلث الليل.' },
+      shafii: { seg: 'ok', note: 'وقت اختيار إلى ثلث الليل.' },
+      hanbali: { seg: 'ok', note: 'وقت اختيار إلى ثلث الليل.' },
+    },
   },
   third: {
-    label: 'ثلث الليل — نهاية المختار', short: 'ثلث الليل',
-    sub: 'بعده مباح عند الحنفية، وخارج المختار عند الجمهور',
-    desc: 'تأخيرها إلى هنا مباح عند الحنفية، وهو خارج المختار عند المالكية والشافعية والحنابلة.',
+    label: 'ثلث الليل', short: 'ثلث الليل',
+    sub: 'الليل من الغروب إلى الفجر',
+    by: {
+      hanafi: { seg: 'jawaz', note: 'التأخير إلى نصف الليل مباح.' },
+      maliki: { seg: 'darura', note: 'انتهى المختار، وما بعده ضروري إلى الفجر يأثم المؤخِّر إليه بلا عذر.' },
+      shafii: { seg: 'jawaz', note: 'خرج وقت الاختيار، وهو جواز إلى طلوع الفجر.' },
+      hanbali: { seg: 'darura', note: 'انتهى المختار، وما بعده ضرورة إلى الفجر يأثم المؤخِّر إليها بلا عذر.' },
+    },
   },
   half: {
-    label: 'نصف الليل — الخروج', short: 'نصف الليل',
-    sub: 'حدّ حديث عبد الله بن عمرو · بعده ضرورة عند الجمهور',
-    desc: 'خرج الوقت عند من حدّه بنصف الليل. وعند الجمهور هو وقت ضرورة يأثم المؤخِّر إليه بلا عذر.',
+    label: 'نصف الليل', short: 'نصف الليل',
+    sub: 'حدّ حديث عبد الله بن عمرو',
+    by: {
+      hanafi: { seg: 'karaha', note: 'التأخير بعد نصف الليل مكروه تحريماً.' },
+      maliki: { seg: 'darura', note: 'وقت ضروري يأثم المؤخِّر إليه بلا عذر.' },
+      shafii: { seg: 'jawaz', note: 'جواز إلى طلوع الفجر.' },
+      hanbali: { seg: 'darura', note: 'وقت ضرورة يأثم المؤخِّر إليه بلا عذر.' },
+    },
   },
   ishaExit: {
-    label: 'طلوع الفجر — الخروج الكلي عند الجمهور', short: 'طلوع الفجر',
+    label: 'طلوع الفجر — خروج العشاء', short: 'طلوع الفجر',
     sub: 'بعده قضاء باتفاق',
   },
 };
