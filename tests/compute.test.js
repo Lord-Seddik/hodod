@@ -102,6 +102,37 @@ describe('prayer boundaries', () => {
     expect(build({ y: 2026, m: 12, d: 21 }).polar).toBe(true);
   });
 
+  it('official offsets: Diyanet = MWL angles + temkin minutes', () => {
+    // both methods use 18°/17°, so any difference is the official offset
+    const dt = { y: 2026, m: 10, d: 28 };
+    useCity('Istanbul', { method: 'MWL' });
+    const mwl = build(dt).T;
+    useCity('Istanbul', { method: 'DIYANET' });
+    const diy = build(dt).T;
+    const min = k => (diy[k] - mwl[k]) / 60000;
+    expect(min('fajr')).toBe(0);
+    expect(min('sunrise')).toBe(-7);
+    expect(min('dhuhr')).toBe(5);
+    expect(min('asr')).toBe(4);
+    expect(min('sunset')).toBe(7);
+    expect(min('maghrib')).toBe(7);
+    expect(min('isha')).toBe(0);
+    expect(min('istiwa')).toBe(0); // istiwa stays at true solar noon
+  });
+
+  it('custom angles ignore official offsets', () => {
+    const dt = { y: 2026, m: 10, d: 28 };
+    useCity('Istanbul', { method: 'MWL' });
+    const mwl = build(dt).T;
+    useCity('Istanbul', { method: 'CUSTOM', customF: 18, customI: 17 });
+    expect(build(dt).T.sunrise).toBe(mwl.sunrise);
+  });
+
+  it('isfar opens a disputed (khilaf) zone, not karaha', () => {
+    const fajr = build({ y: 2026, m: 3, d: 20 }).prayers.find(p => p.key === 'fajr');
+    expect(fajr.marks.find(m => m.key === 'isfar').seg).toBe('khilaf');
+  });
+
   it('precaution margin moves entries later and exits earlier', () => {
     const dt = { y: 2026, m: 3, d: 20 };
     const base = build(dt).T;

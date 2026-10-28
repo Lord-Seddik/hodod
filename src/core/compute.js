@@ -17,7 +17,8 @@ export function methodParams(dt) {
     ishaMin = (M.ishaMinRamadan && hijriMonth(dt) === 9) ? M.ishaMinRamadan : M.ishaMin;
     ishaDesc = ishaMin + ' دقيقة بعد المغرب';
   } else { ishaAngle = M.isha; ishaDesc = ishaAngle + '° تحت الأفق'; }
-  return { fajrAngle, ishaAngle, ishaMin, ishaDesc, name: M.name };
+  const adjust = key === 'CUSTOM' ? {} : (M.adjust || {});
+  return { fajrAngle, ishaAngle, ishaMin, ishaDesc, adjust, name: M.name };
 }
 
 // ── per-version caches (cleared automatically when settings change)
@@ -77,13 +78,17 @@ export function dayEvents(dt) {
     stars = clamp(stars, sunset, isha);
   }
 
+  // official fixed offsets (e.g. Diyanet temkin) move the published entry/exit
+  // times only; istiwa stays at true solar noon and Isha keeps its own rule
+  const A = M.adjust, off = k => (A[k] || 0) / 60;
   const base = Date.UTC(dt.y, dt.m - 1, dt.d);
   const toMs = t => (Number.isFinite(t) ? base + t * HOUR : NaN);
   const r = {
     dt, polar, est, M,
-    fajr: toMs(fajr), isfar: toMs(isfar), sunrise: toMs(sunrise), ishraq: toMs(ishraq),
-    istiwa: toMs(dh) - cfg.istiwa * MIN, dhuhr: toMs(dh), asr1: toMs(asr1), asr2: toMs(asr2),
-    isfirar: toMs(isfirar), sunset: toMs(sunset), stars: toMs(stars), isha: toMs(isha),
+    fajr: toMs(fajr), isfar: toMs(isfar), sunrise: toMs(sunrise + off('sunrise')), ishraq: toMs(ishraq),
+    istiwa: toMs(dh) - cfg.istiwa * MIN, dhuhr: toMs(dh + off('dhuhr')),
+    asr1: toMs(asr1 + off('asr')), asr2: toMs(asr2 + off('asr')),
+    isfirar: toMs(isfirar), sunset: toMs(sunset + off('maghrib')), stars: toMs(stars), isha: toMs(isha),
   };
   eventCache.set(ck, r);
   return r;
@@ -154,7 +159,7 @@ function computeBuild(dt) {
   const P = [
     { key: 'fajr', marks: [
       mk('fajr', 'fajr', e.fajr, 'start', 'ok'),
-      mk('isfar', 'isfar', e.isfar, 'bound', 'karaha'),
+      mk('isfar', 'isfar', e.isfar, 'bound', 'khilaf'),
       mk('sunrise', 'sunrise', e.sunrise, 'exit', 'nahy'),
       mk('ishraq', 'ishraq', e.ishraq, 'end', null),
     ] },

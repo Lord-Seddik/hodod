@@ -7,7 +7,7 @@ import { toast } from './toast.js';
 
 // [mark key, header, type]
 const COLUMNS = [
-  ['fajr', 'الفجر', 'ok'], ['isfar', 'الإسفار', 'karaha'], ['sunrise', 'الشروق', 'exit'],
+  ['fajr', 'الفجر', 'ok'], ['isfar', 'الإسفار', 'khilaf'], ['sunrise', 'الشروق', 'exit'],
   ['dhuhr', 'الظهر', 'ok'], ['asr', 'العصر', 'ok'], ['asr2', 'ظل المثلين', 'khilaf'], ['isfirar', 'الاصفرار', 'karaha'],
   ['maghrib', 'المغرب', 'ok'], ['stars', 'الاشتباك', 'karaha'], ['isha', 'العشاء', 'ok'], ['third', 'ثلث الليل', 'khilaf'], ['half', 'نصف الليل', 'darura'],
 ];

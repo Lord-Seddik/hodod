@@ -58,9 +58,14 @@ function renderDay() {
   view.curId = phaseId(currentPhase());
 }
 
+const ADJUST_LABELS = { sunrise: 'الشروق', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب' };
+
 function renderMethodLine() {
   const M = methodParams(view.sel);
+  const adj = Object.entries(M.adjust).filter(([, v]) => v)
+    .map(([k, v]) => ADJUST_LABELS[k] + ' ' + (v > 0 ? '+' : '−') + digits(Math.abs(v)) + ' د');
   $('#methodLine').textContent = 'طريقة الحساب: ' + M.name + ' · الفجر ' + M.fajrAngle + '° · العشاء ' + M.ishaDesc
+    + (adj.length ? ' · تعديل رسمي: ' + adj.join('، ') : '')
     + ' · العصر ' + (cfg.asr === 'hanafi' ? 'ظل المثلين' : 'ظل المثل')
     + ' · ' + loc.lat.toFixed(3) + '، ' + loc.lon.toFixed(3) + ' · ' + loc.tz;
 }
