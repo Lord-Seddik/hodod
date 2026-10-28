@@ -44,7 +44,6 @@ export function ensureTimeline(force = false) {
       from: s.from, to: s.to, seg: s.type, valid: s.valid, title: s.title || PRAYERS[s.prayer]?.name || '',
       pkey: s.prayer, dt: s.dt, mark: s.mark || {}, desc,
       next: { short: at.short, kind, type: next?.type, prayer: next?.prayer, at },
-      prayer: s.title,
     };
   });
 

@@ -11,7 +11,6 @@ const pill = t => (SEGMENTS[t] || SEGMENTS.none).pill;
 function rowClass(m) {
   if (m.context) return 'minor';
   if (m.exit) return 'exit';
-  if (m.quiet) return 'quiet';
   return '';
 }
 

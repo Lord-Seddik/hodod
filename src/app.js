@@ -145,7 +145,6 @@ function renderSelectors() {
       .replace('<button ', '<button ' + (k === nowKey ? 'class="is-now" title="الصلاة الحالية" ' : ''))).join('');
   $('#detailsBtn').setAttribute('aria-pressed', String(!!cfg.details));
   app.classList.toggle('mode-rec', !adv);
-  app.classList.toggle('mode-multi', multi);
   app.classList.toggle('compact', !cfg.details);
   $('#legendNote').textContent = !adv ? 'بحسب الاتفاق وقول الجمهور'
     : multi ? 'سطر لكل مذهب، والأعلى الآمن للجميع' : 'بحسب ' + MADHABS.find(m => m.key === cfg.madhabs[0]).name;

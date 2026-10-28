@@ -31,16 +31,17 @@ src/
     astro.js               solar position math (declination, equation of time, sun altitude)
     state.js               settings (defaults, limits, localStorage) and the active location
     time.js                time-zone aware formatting, Hijri/Gregorian dates, durations
-    compute.js             solar events → rounded prayer boundaries for one date (cached)
-    timeline.js            yesterday→tomorrow phases and scheduled alerts
+    compute.js             solar events → per-madhab prayer timelines → combined rows (cached)
+    timeline.js            the current view's phases (two days back → tomorrow) and scheduled alerts
   data/
     cities.js              built-in cities (name, country, coordinates, time zone, method)
-    methods.js             official calculation methods (Fajr/Isha angles)
-    rulings.js             ALL boundary wording: labels, sub-lines, fiqh descriptions
+    methods.js             official calculation methods (Fajr/Isha angles, official minute offsets)
+    rulings.js             ALL fiqh content: each prayer's boundaries and every madhab's ruling, note
+                           and best time; how madhabs combine; the wording of each type
   ui/
     now.js                 live "now" gauge
-    cards.js               five prayer cards
-    sky.js                 sun-path canvas strip, bands, ticks
+    cards.js               prayer cards (all five, or the selected prayer)
+    sky.js                 sun-path canvas strip, ruling rows (one per madhab when several), ticks
     month.js               month table + CSV
     alerts.js              sound, toasts, system notifications, upcoming list
     location.js            location dialog (search, GPS, custom coordinates)
@@ -51,8 +52,12 @@ src/
     tokens.css             colors, fonts, light/dark themes  ← start here to restyle
     base.css, components.css, header.css, now.css, day.css, month.css, alerts.css, dialogs.css
 tests/
-  compute.test.js          sanity checks for times, ordering, high latitudes, precaution margin
+  compute.test.js          times vs references, ordering for every city, offsets, precaution margin
+  madhabs.test.js          per-madhab windows and rulings, majority / safe combining
+  cities.test.js           every city's time zone, coordinates, method and solar noon
 ```
+
+Architecture notes for future changes: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Common edits
 

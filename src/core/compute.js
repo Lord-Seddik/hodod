@@ -3,7 +3,7 @@ import { solar, clamp, MIN, HOUR } from './astro.js';
 import { cfg, loc, methodKey, isAdvanced, activeMadhabs, asrAt2, whiteIsha, version } from './state.js';
 import { addDays, hijriMonth } from './time.js';
 import { METHODS } from '../data/methods.js';
-import { PRAYERS, PRAYER_ORDER, FARD, CONTEXT, MADHABS, VALID, SEGMENTS, combineSafe, combineMajority, summarize } from '../data/rulings.js';
+import { PRAYERS, PRAYER_ORDER, FARD, CONTEXT, MADHABS, VALID, combineSafe, combineMajority, summarize } from '../data/rulings.js';
 
 /** Effective Fajr/Isha parameters for a date (Isha may depend on Ramadan). */
 export function methodParams(dt) {
@@ -434,4 +434,3 @@ export function displayRows(dates, prayerKey) {
   return [{ label: '', slices: combined }];
 }
 
-export const segPill = t => (SEGMENTS[t] || SEGMENTS.none).pill;

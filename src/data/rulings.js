@@ -305,7 +305,7 @@ export const PRAYERS = {
       {
         key: 'maghrib', at: e => e.sunset, label: 'دخول المغرب', short: 'دخول المغرب', sub: 'غروب قرص الشمس',
         by: {
-          maliki: c => (c.has('maliki') ? best('مختارها مضيّق بقدر الطهارة والأذان والإقامة والصلاة، والسنة تعجيلها.') : early('السنة تعجيلها.')),
+          maliki: best('مختارها مضيّق بقدر الطهارة والأذان والإقامة والصلاة، والسنة تعجيلها.'),
           shafii: early('السنة تعجيلها، ويمتد وقتها إلى مغيب الشفق على المعتمد.'),
           all: early('السنة تعجيلها.'),
         },
@@ -321,7 +321,7 @@ export const PRAYERS = {
         sub: c => 'انخفاض ' + c.cfg.stars + '° (اجتهادي)' + c.est('stars'),
         by: {
           hanafi: r('karaha', 'يُكره تحريماً تأخيرها إلى اشتباك النجوم.'),
-          maliki: c => (c.has('maliki') ? 'same' : r('darura', 'انتهى المختار، وما بعده ضروري إلى الفجر ' + SIN)),
+          maliki: 'same', // already in its necessity time since the narrow chosen time ended
           shafii: r('jawaz', 'خرج وقت الفضيلة، ويبقى الوقت إلى مغيب الشفق.'),
           hanbali: r('jawaz', 'يجوز التأخير ما لم يغب الشفق، والسنة التعجيل.'),
         },
