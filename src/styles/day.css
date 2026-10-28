@@ -17,6 +17,8 @@
 .chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;min-height:34px;cursor:pointer;font-weight:600;color:var(--muted);transition:background-color .15s,border-color .15s}
 .chips button:hover{border-color:var(--accent)}
 .chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chips button.is-now{position:relative}
+.chips button.is-now::after{content:"";position:absolute;top:3px;inset-inline-start:5px;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--surface)}
 .details-btn{margin-inline-start:auto}
 
 .day-view{display:grid;gap:18px}

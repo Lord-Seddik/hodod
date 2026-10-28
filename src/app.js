@@ -2,7 +2,7 @@
 import { cfg, loc, saveSettings, bumpVersion, isAdvanced, DEFAULTS } from './core/state.js';
 import { MADHABS, PRAYERS, PRAYER_ORDER, FARD } from './data/rulings.js';
 import { build, methodParams, displayRows } from './core/compute.js';
-import { ensureTimeline, currentPhase, phaseId } from './core/timeline.js';
+import { ensureTimeline, currentPhase, getPhases, phaseId } from './core/timeline.js';
 import { todayLocal, addDays, addMonths, sameDay, localMidnight, gregString, hijriString, isoDate, parseIsoDate, digits } from './core/time.js';
 import { $ } from './ui/dom.js';
 import { toast } from './ui/toast.js';
@@ -21,7 +21,32 @@ const view = {
   today: todayLocal(), // last seen local date (for midnight rollover)
   curId: '',           // current phase id shown in the cards
   prayer: null,        // selected prayer key, or null for all
+  autoPrayer: true,    // follow the current prayer until the user picks another
 };
+
+// outside the obligatory prayers, the prayer to show: after sunrise and in Duha → Duha (or Dhuhr), istiwa → Dhuhr
+const CONTEXT_PRAYER = { afterSunrise: 'duha', duhaTime: 'duha', istiwaTime: 'dhuhr' };
+
+/** The prayer whose time it is now (or the next one between prayers). */
+function currentPrayerKey() {
+  const now = Date.now();
+  const ph = currentPhase(now) || getPhases().find(p => p.from > now);
+  if (!ph) return null;
+  let k = PRAYERS[ph.pkey] ? ph.pkey : CONTEXT_PRAYER[ph.pkey] || null;
+  if (k === 'duha' && !cfg.showDuha) k = 'dhuhr';
+  return k;
+}
+
+/**
+ * The build that holds the selected prayer's instance: on today, a prayer that
+ * started yesterday and is still running (Isha after midnight) comes from yesterday.
+ */
+function prayerBuild(key) {
+  const B = build(view.sel);
+  if (!key || !sameDay(view.sel, todayLocal())) return B;
+  const prev = build(addDays(view.sel, -1)), w = prev.prayers?.[key]?.window, now = Date.now();
+  return w && now >= w.from && now < w.to ? prev : B;
+}
 
 const isFriday = dt => new Date(Date.UTC(dt.y, dt.m - 1, dt.d)).getUTCDay() === 5;
 
@@ -64,8 +89,8 @@ function renderSky(B) {
     setSpan(w.from - pad, w.to + pad, false);
     drawSky();
     const labels = P.marks.filter(m => !m.quiet && !m.context && m.rules).map(m => ({ at: m.at, text: m.short }));
-    $('#skyTitle').textContent = 'وقت ' + P.name;
-    renderSkyOverlay(displayRows([view.sel], view.prayer), labels, 'من أول دخوله إلى آخر خروجه عند المذاهب المختارة');
+    $('#skyTitle').textContent = 'وقت ' + P.name + (sameDay(B.dt, view.sel) ? '' : ' · ليلة ' + gregString(B.dt, { weekday: 'long' }));
+    renderSkyOverlay(displayRows([B.dt], view.prayer), labels, 'من أول دخوله إلى آخر خروجه عند المذاهب المختارة');
     return;
   }
   setSpan(localMidnight(view.sel), localMidnight(addDays(view.sel, 1)), true);
@@ -86,9 +111,9 @@ function renderDay() {
     $('#cards').innerHTML = '';
   } else {
     polar.hidden = true;
-    renderCards(B, view.prayer ? [view.prayer] : FARD);
+    renderCards(view.prayer ? prayerBuild(view.prayer) : B, view.prayer ? [view.prayer] : FARD);
   }
-  renderSky(B);
+  renderSky(view.prayer ? prayerBuild(view.prayer) : B);
   view.curId = phaseId(currentPhase());
 }
 
@@ -113,8 +138,11 @@ function renderSelectors() {
   const adv = isAdvanced(), app = $('#app'), multi = adv && cfg.madhabs.length > 1;
   $('#madhabBar').innerHTML = chip('data-m', 'jumhur', !adv, 'الجمهور')
     + MADHABS.map(m => chip('data-m', m.key, adv && cfg.madhabs.includes(m.key), m.name)).join('');
+  // the current prayer's chip carries a «now» dot
+  const nowKey = sameDay(view.sel, todayLocal()) ? currentPrayerKey() : null;
   $('#prayerBar').innerHTML = chip('data-p', 'all', !view.prayer, 'الكل')
-    + prayerKeys(view.sel).map(k => chip('data-p', k, view.prayer === k, PRAYERS[k].name)).join('');
+    + prayerKeys(view.sel).map(k => chip('data-p', k, view.prayer === k, PRAYERS[k].name)
+      .replace('<button ', '<button ' + (k === nowKey ? 'class="is-now" title="الصلاة الحالية" ' : ''))).join('');
   $('#detailsBtn').setAttribute('aria-pressed', String(!!cfg.details));
   app.classList.toggle('mode-rec', !adv);
   app.classList.toggle('mode-multi', multi);
@@ -127,9 +155,11 @@ function renderAll() {
   $('#locName').textContent = loc.name + (loc.country ? '، ' + loc.country : '');
   $('#nowCity').textContent = loc.name;
   $('#app').classList.toggle('nu-arab', cfg.nu === 'arab');
+  ensureTimeline(true);
+  // by default the day view focuses the current prayer (the month view shows all)
+  if (view.autoPrayer) view.prayer = view.mode === 'day' && sameDay(view.sel, todayLocal()) ? currentPrayerKey() : null;
   fixPrayer();
   renderSelectors();
-  ensureTimeline(true);
   renderDateHead();
   const isDay = view.mode === 'day';
   $('#dayView').hidden = !isDay;
@@ -208,8 +238,11 @@ function initNavigation() {
     $('#madhabBar button[data-m="' + k + '"]')?.focus();
   });
   // prayer selector (display only, no recalculation)
+  // choosing the current prayer goes back to following it; any other choice stays put
   const selectPrayer = k => {
-    view.prayer = k === 'all' || k === view.prayer ? null : k;
+    const next = k === 'all' || k === view.prayer ? null : k;
+    view.autoPrayer = !!next && next === currentPrayerKey() && sameDay(view.sel, todayLocal());
+    view.prayer = next;
     renderAll();
   };
   $('#prayerBar').addEventListener('click', e => {
@@ -285,7 +318,8 @@ function tick30() {
   updateSkyNow();
   renderAlertList();
   // re-render the cards only when the current phase has moved on
-  if (view.mode === 'day' && phaseId(currentPhase()) !== view.curId) renderDay();
+  // when the phase moves on: follow the new prayer (auto) or just refresh the cards
+  if (view.mode === 'day' && phaseId(currentPhase()) !== view.curId) { if (view.autoPrayer) renderAll(); else { renderSelectors(); renderDay(); } }
 }
 
 export function start() {
