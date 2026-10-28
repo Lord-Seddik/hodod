@@ -64,6 +64,24 @@ describe('prayer boundaries', () => {
     }
   });
 
+  it('every built-in city produces ordered boundaries at solstices and equinoxes', () => {
+    const dates = [[3, 20], [6, 21], [9, 22], [12, 21]];
+    CITIES.forEach((c, i) => {
+      Object.assign(cfg, DEFAULTS, { cityIdx: i, custom: null });
+      applyLocation(); bumpVersion();
+      for (const [m, d] of dates) {
+        const B = build({ y: 2026, m, d });
+        if (B.polar) continue;
+        for (const p of B.prayers) {
+          p.marks.forEach((mk, j) => {
+            expect(Number.isFinite(mk.at), `${c.en} ${m}/${d} ${mk.key}`).toBe(true);
+            if (j) expect(mk.at, `${c.en} ${m}/${d} ${mk.key}`).toBeGreaterThanOrEqual(p.marks[j - 1].at);
+          });
+        }
+      }
+    });
+  });
+
   it('Hanafi Asr starts at the 2× shadow and drops the khilaf mark', () => {
     useCity('Karachi', { asr: 'hanafi' });
     const B = build({ y: 2026, m: 6, d: 1 });

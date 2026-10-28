@@ -3,14 +3,31 @@ import { CITIES } from '../data/cities.js';
 import { cfg, loc, BROWSER_TZ, validTz, applyLocation } from '../core/state.js';
 import { $, esc } from './dom.js';
 
-const MAX_RESULTS = 300;
+// loose matching: ignore case, diacritics, tatweel, hamza forms, taa marbuta and alif maqsura
+const norm = s => s.normalize('NFD').replace(/[̀-ًͯ-ْـ]/g, '').toLowerCase()
+  .replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[-'’.]/g, ' ').trim();
 
-// loose matching: ignore hamza forms, taa marbuta and alif maqsura
-const norm = s => s.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim();
-const ALL = CITIES.map((c, i) => ({ c, i, hay: norm(c.ar + ' ' + c.en + ' ' + c.country) }));
+// Default order: cities grouped by country (countries in order of first
+// appearance), so cities appended later still sit with their country.
+const countryRank = new Map();
+CITIES.forEach(c => { if (!countryRank.has(c.country)) countryRank.set(c.country, countryRank.size); });
+const ALL = CITIES.map((c, i) => ({
+  c, i,
+  name: norm(c.ar + ' ' + c.en),
+  words: norm(c.ar + ' ' + c.en).split(/\s+/),
+  country: norm(c.country),
+})).sort((a, b) => countryRank.get(a.c.country) - countryRank.get(b.c.country) || a.i - b.i);
+
+/** 0 = a name word starts with q, 1 = name contains q, 2 = country matches, -1 = no match */
+function score(x, q) {
+  if (x.words.some(w => w.startsWith(q))) return 0;
+  if (x.name.includes(q)) return 1;
+  if (x.country.includes(q)) return 2;
+  return -1;
+}
 
 function cityHtml(list) {
-  return list.slice(0, MAX_RESULTS).map(({ c, i }) => {
+  return list.map(({ c, i }) => {
     const sel = !cfg.custom && cfg.cityIdx === i;
     return '<button type="button" data-i="' + i + '"' + (sel ? ' class="sel" aria-current="true"' : '') + '>'
       + '<span>' + esc(c.ar) + ' <small>' + esc(c.country) + '</small></span>'
@@ -20,7 +37,12 @@ function cityHtml(list) {
 
 function filterCities() {
   const q = norm($('#citySearch').value);
-  $('#cityList').innerHTML = cityHtml(q ? ALL.filter(x => x.hay.includes(q)) : ALL);
+  const list = !q ? ALL : ALL
+    .map((x, order) => ({ x, order, s: score(x, q) }))
+    .filter(r => r.s >= 0)
+    .sort((a, b) => a.s - b.s || a.order - b.order)
+    .map(r => r.x);
+  $('#cityList').innerHTML = cityHtml(list);
 }
 
 function fillTimeZones() {

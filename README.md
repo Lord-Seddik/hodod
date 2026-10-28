@@ -59,7 +59,7 @@ tests/
 | To change… | Edit |
 |---|---|
 | Wording of a boundary or its fiqh note | `src/data/rulings.js` |
-| Add a city | append to `src/data/cities.js` (append, don't reorder: saved choices store the index) |
+| Add a city | append to `src/data/cities.js` (append, don't reorder: saved choices store the index). The picker groups cities by country automatically, and `npm test` checks every entry's time zone, coordinates and method |
 | Add / adjust a calculation method | `src/data/methods.js` |
 | Default settings or allowed ranges | `DEFAULTS` / `LIMITS` in `src/core/state.js` |
 | Which boundaries exist and their type/color | `computeBuild()` in `src/core/compute.js` |
