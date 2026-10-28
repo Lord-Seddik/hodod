@@ -1,64 +1,67 @@
-// The five prayer cards for the selected day.
+// Prayer cards for the selected day (all obligatory prayers, or the selected one).
 import { MIN } from '../core/astro.js';
+import { isAdvanced, activeMadhabs } from '../core/state.js';
 import { currentPhase, isPhaseMark } from '../core/timeline.js';
 import { fmtTime, duration, sameDay } from '../core/time.js';
 import { SEGMENTS } from '../data/rulings.js';
 import { $, esc } from './dom.js';
 
-function markClass(m, prev) {
-  if (m.kind === 'exit') return 'exit';
-  if (m.kind === 'end' || m.kind === 'nahy') return 'minor';
-  // a boundary that changes nothing for the selected madhabs (hidden in compact view)
-  if (m.kind === 'bound' && prev && prev.seg === m.seg && m.agree) return 'quiet';
+const pill = t => (SEGMENTS[t] || SEGMENTS.none).pill;
+
+function rowClass(m) {
+  if (m.context) return 'minor';
+  if (m.exit) return 'exit';
+  if (m.quiet) return 'quiet';
   return '';
 }
-const markType = m => (m.kind === 'exit' ? 'exit' : m.seg || 'nahy');
 
-function segmentBar(marks) {
-  const out = [];
-  for (let i = 0; i < marks.length - 1; i++) {
-    const a = marks[i], b = marks[i + 1];
-    if (!a.seg || a.seg === 'nahy' || !(b.at > a.at)) continue;
-    const title = SEGMENTS[a.seg].pill + ' · ' + duration(b.at - a.at);
-    out.push('<i class="t-' + a.seg + '" style="flex-grow:' + ((b.at - a.at) / MIN).toFixed(1) + '" title="' + esc(title) + '"></i>');
-  }
-  return out.join('');
+function segmentBar(P) {
+  const w = P.window;
+  if (!w) return '';
+  return P.row.filter(s => s.to > s.from).map(s =>
+    '<i class="t-' + s.type + '" style="flex-grow:' + ((s.to - s.from) / MIN).toFixed(1) + '" title="' + esc(pill(s.type) + ' · ' + duration(s.to - s.from)) + '"></i>').join('');
 }
 
-/** Per-madhab verdicts: compact chips when they differ, and notes (details view). */
-function rulingsHtml(m) {
+/** Per-madhab verdicts: chips when they differ (several madhabs), notes in the details view. */
+function rulingsHtml(m, multi) {
   if (!m.rulings) return '';
-  const chips = m.agree ? '' : '<span class="mz-chips">' + m.rulings.map(r =>
-    '<span class="mz t-' + r.seg + '" title="' + esc(r.name + ': ' + r.note) + '">' + esc(r.short) + ': ' + esc(SEGMENTS[r.seg].pill) + '</span>').join('') + '</span>';
-  const notes = m.groups.length === 1
-    ? '<span class="mz-note">' + esc(m.groups[0].note) + '</span>'
-    : m.groups.map(g => '<span class="mz-note t-' + g.seg + '"><i></i>' + esc(g.label) + ': ' + esc(g.note) + '</span>').join('');
-  return chips + '<span class="mz-notes">' + notes + '</span>';
+  const chips = multi && !m.agree ? '<span class="mz-chips">' + m.rulings.map(r =>
+    '<span class="mz t-' + r.type + '" title="' + esc(r.name + ': ' + r.note) + '">' + esc(r.short) + ': ' + esc(pill(r.type)) + '</span>').join('') + '</span>' : '';
+  const notes = m.desc ? '<span class="mz-notes">' + m.desc.split('\n').map(line => '<span class="mz-note">' + esc(line) + '</span>').join('') + '</span>' : '';
+  return chips + notes;
 }
 
-export function renderCards(B) {
-  const cur = currentPhase();
-  const curOnThisDay = !!cur && sameDay(cur.dt, B.dt);
+/** Length of the stretch a mark opens (for the sub line). */
+function stretch(P, m, i) {
+  const next = P.marks.slice(i + 1).find(x => !x.quiet && !x.context);
+  if (!next || !m.type || !SEGMENTS[m.type] || m.exit || m.context) return '';
+  return ' · ' + pill(m.type) + ' ' + duration(next.at - m.at);
+}
 
-  $('#cards').innerHTML = B.prayers.map(p => {
-    const ms = p.marks;
-    const start = ms.find(m => m.kind === 'start'), exit = ms.find(m => m.kind === 'exit');
-    const isCurrent = curOnThisDay && cur.pkey === p.key && cur.seg !== 'nahy';
-
-    const rows = ms.map((m, i) => {
-      const nx = ms[i + 1];
-      const segLen = (m.seg && nx && nx.at > m.at && m.seg !== 'nahy') ? ' · ' + SEGMENTS[m.seg].pill + ' ' + duration(nx.at - m.at) : '';
-      const curMark = isPhaseMark(cur, B.dt, m);
-      return '<li class="mk t-' + markType(m) + ' ' + markClass(m, ms[i - 1]) + (curMark ? ' cur' : '') + '"' + (curMark ? ' aria-current="time"' : '') + '>'
-        + '<i class="dot"></i>'
-        + '<span class="lbl"><b>' + esc(m.label) + '</b><small>' + esc(m.sub + segLen) + '</small>' + rulingsHtml(m) + '</span>'
-        + '<time class="num">' + esc(fmtTime(m.at)) + '</time></li>';
-    }).join('');
-
-    return '<article class="pcard' + (isCurrent ? ' current' : '') + '">'
-      + '<header><h3>' + esc(p.name) + (isCurrent ? '<span class="now-tag">الآن</span>' : '') + '</h3>'
-      + '<span class="range num">' + esc(fmtTime(start.at)) + ' – ' + esc(fmtTime(exit.at)) + '</span></header>'
-      + '<div class="seg">' + segmentBar(ms) + '</div>'
-      + '<ul class="marks">' + rows + '</ul></article>';
+function card(B, P, cur, wide) {
+  const multi = isAdvanced() && activeMadhabs().length > 1;
+  const isCurrent = !!cur && !!cur.dt && sameDay(cur.dt, B.dt) && cur.pkey === P.key && cur.valid;
+  const rows = P.marks.map((m, i) => {
+    if (m.quiet && !m.context) return '';
+    const curMark = isPhaseMark(cur, B.dt, m);
+    const type = m.context ? 'nahy' : m.exit ? 'exit' : (m.type || 'nahy');
+    return '<li class="mk t-' + type + ' ' + rowClass(m) + (curMark ? ' cur' : '') + '"' + (curMark ? ' aria-current="time"' : '') + '>'
+      + '<i class="dot"></i>'
+      + '<span class="lbl"><b>' + esc(m.label) + '</b><small>' + esc(m.sub + stretch(P, m, i)) + '</small>' + rulingsHtml(m, multi) + '</span>'
+      + '<time class="num">' + esc(fmtTime(m.at)) + '</time></li>';
   }).join('');
+  const range = P.window ? fmtTime(P.window.from) + ' – ' + fmtTime(P.window.to) : '—';
+  return '<article class="pcard' + (isCurrent ? ' current' : '') + (wide ? ' wide' : '') + '" data-prayer="' + P.key + '">'
+    + '<header><h3>' + esc(P.name) + (isCurrent ? '<span class="now-tag">الآن</span>' : '') + '</h3>'
+    + '<span class="range num">' + esc(range) + '</span></header>'
+    + '<div class="seg">' + segmentBar(P) + '</div>'
+    + '<ul class="marks">' + rows + '</ul></article>';
+}
+
+/** keys: prayers to show, in order. */
+export function renderCards(B, keys) {
+  const cur = currentPhase();
+  const list = keys.map(k => B.prayers[k]).filter(Boolean);
+  $('#cards').innerHTML = list.map(P => card(B, P, cur, list.length === 1)).join('')
+    || '<p class="muted">لا تُصلّى هذه الصلاة في هذا اليوم.</p>';
 }

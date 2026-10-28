@@ -9,12 +9,15 @@
 .datenav .date span{font-size:13px;color:var(--muted)}
 .datenav input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 8px;min-height:34px}
 
-/* madhab filter + details toggle */
-.filters{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.madhabs{display:flex;gap:6px;flex-wrap:wrap}
-.madhabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;min-height:34px;cursor:pointer;font-weight:600;color:var(--muted);transition:background-color .15s,border-color .15s}
-.madhabs button:hover{border-color:var(--accent)}
-.madhabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* madhab + prayer selectors */
+.selectors{display:grid;gap:8px}
+.sel-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.sel-label{font-size:13px;font-weight:600;color:var(--muted);min-width:52px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;min-height:34px;cursor:pointer;font-weight:600;color:var(--muted);transition:background-color .15s,border-color .15s}
+.chips button:hover{border-color:var(--accent)}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.details-btn{margin-inline-start:auto}
 
 .day-view{display:grid;gap:18px}
 
@@ -25,8 +28,14 @@
 .sky-now::after{content:"";position:absolute;top:-1px;right:-4px;width:10px;height:10px;border-radius:50%;background:#fff}
 .sky-labels{position:relative;height:20px;margin-top:8px;font-size:12px;font-weight:600}
 .sky-labels span{position:absolute;top:0;transform:translateX(50%);white-space:nowrap;color:var(--ink)}
-.sky-bands{position:relative;height:14px;margin-top:4px;border-radius:5px;overflow:hidden;background:var(--surface-2)}
+.sky-rows{display:grid;gap:3px;margin-top:4px}
+.sky-row{position:relative}
+.sky-bands{position:relative;height:14px;border-radius:5px;overflow:hidden;background:var(--surface-2)}
 .sky-bands i{position:absolute;top:0;bottom:0;background:var(--c)}
+/* several madhabs: labelled rows, the "safe for all" row first and taller */
+.sky-rows.multi .sky-bands{height:16px}
+.sky-rows.multi .sky-row.safe .sky-bands{height:20px;box-shadow:0 0 0 1.5px var(--ink) inset}
+.sky-row-label{position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:1;font-size:11px;font-weight:600;line-height:1;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,var(--surface) 85%,transparent);color:var(--ink);pointer-events:none}
 .sky-ticks{position:relative;height:18px;margin-top:4px;font-size:11.5px;color:var(--muted)}
 .sky-ticks span{position:absolute;transform:translateX(50%)}
 
@@ -34,7 +43,9 @@
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
 .pcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px;display:grid;gap:12px;align-content:start;min-width:0}
 .pcard.current{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
-.pcard header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pcard header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer}
+.pcard header:hover h3{color:var(--accent)}
+.pcard.wide{grid-column:1 / -1}
 .pcard h3{font-family:var(--f-display);font-size:24px;font-weight:600}
 .pcard .range{font-size:14px;color:var(--muted)}
 .now-tag{font-size:12px;font-weight:600;color:var(--accent);margin-inline-start:8px;font-family:var(--f-body)}
@@ -65,7 +76,8 @@
 /* recommended mode: the classic look, one verdict per boundary */
 .mode-rec .mz-chips,
 .mode-rec .mz-notes,
-.mode-rec .adv-only{display:none}
+.mode-rec .adv-only,
+.app:not(.mode-rec) .rec-only{display:none}
 
 /* advanced compact view: hide sub-lines, notes, and boundaries that change nothing */
 .compact .mk .lbl small,
@@ -85,6 +97,14 @@
 .legend span{color:var(--muted)}
 
 @media (max-width:560px){
+  /* selectors: one swipeable line each */
+  .sel-row{flex-wrap:nowrap;gap:8px}
+  .sel-label{min-width:0}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-block:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .chips button{flex:none;padding:4px 12px}
+  .details-btn{flex:none}
+  .details-btn span{display:none}
   /* full-width tabs, then [‹ date ›] on one row and [today | picker] below */
   .dayhead{display:grid}
   .tabs{display:grid;grid-template-columns:1fr 1fr}

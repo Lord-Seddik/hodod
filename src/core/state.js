@@ -10,15 +10,19 @@ export const DEFAULTS = {
   // location
   cityIdx: -1, custom: null,
   // rulings: 'recommended' = agreement and the majority of the four madhabs;
-  // 'advanced' = the user picks madhabs (cfg.madhabs) and the detail level (cfg.details)
+  // 'advanced' = the madhabs picked in the selector (cfg.madhabs)
   rules: 'recommended',
   madhabs: ALL_MADHABS, // advanced only; at least one
-  // calculation; 'auto' follows the madhab (Hanafi only → two shadows, white twilight)
+  // calculation. asr/isha 'auto': each madhab by its own definition, never before
+  // the official time (Hanafi: two shadows, white twilight)
   method: 'AUTO', customF: 18, customI: 17, asr: 'auto', isha: 'auto',
   // boundary definitions
   isfar: 6, sunAlt: 5, stars: 8, istiwa: 5, nightEnd: 'fajr', highLat: 'angle', iht: 0,
   humra: 3,       // Shafi'i: redness before sunrise, ° below the horizon
   maghribMin: 15, // Maliki: minutes after sunset for the narrow chosen Maghrib time
+  fadilaMin: 20,  // "first of the time" (best time) span, minutes
+  // optional prayers in the selector
+  showDuha: true, showJumuah: true,
   // alerts
   alerts: true, exitB: 15, karB: 10, entry: false, sound: false, notify: false,
   // display
@@ -29,7 +33,7 @@ export const DEFAULTS = {
 export const LIMITS = {
   customF: [5, 25], customI: [5, 25], isfar: [1, 12], sunAlt: [1, 15], stars: [4, 14],
   istiwa: [0, 20], iht: [0, 10], exitB: [1, 120], karB: [1, 120],
-  humra: [1, 6], maghribMin: [5, 45],
+  humra: [1, 6], maghribMin: [5, 45], fadilaMin: [5, 60],
 };
 
 const STORE_KEY = 'hudud-alwaqt-v1';
@@ -125,13 +129,11 @@ export const isAdvanced = () => cfg.rules === 'advanced';
 /** Madhabs whose rulings are in effect: the user's pick (advanced) or all four (recommended). */
 export const activeMadhabs = () => (isAdvanced() ? cfg.madhabs : ALL_MADHABS);
 
-const hanafiOnly = () => { const m = activeMadhabs(); return m.length === 1 && m[0] === 'hanafi'; };
+/** Does Asr start at two shadow lengths for this madhab? 'auto': Hanafi (Abu Hanifa); 'hanafi': everyone. */
+export const asrAt2 = m => cfg.asr === 'hanafi' || (cfg.asr === 'auto' && m === 'hanafi');
 
-/** Asr starts at two shadow lengths: chosen explicitly, or 'auto' with only Hanafi selected. */
-export const hanafiAsr = () => cfg.asr === 'hanafi' || (cfg.asr === 'auto' && hanafiOnly());
-
-/** Isha rule in effect: 'method' | 'red' | 'white'; 'auto' → white twilight (Abu Hanifa) with only Hanafi selected. */
-export const ishaRule = () => (cfg.isha === 'auto' ? (hanafiOnly() ? 'white' : 'method') : cfg.isha);
+/** Does this madhab wait for the white twilight (18°) when it is later than the official Isha? */
+export const whiteIsha = m => cfg.isha === 'auto' && m === 'hanafi';
 
 /** Bumped whenever settings/location change; computation caches key on it. */
 export const version = { n: 0 };

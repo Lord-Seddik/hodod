@@ -7,11 +7,11 @@ import { toast } from './toast.js';
 
 // form control id → cfg key
 const FIELDS = {
-  sRules: 'rules', sMethod: 'method', sCF: 'customF', sCI: 'customI', sAsr: 'asr', sIsha: 'isha',
+  sMethod: 'method', sCF: 'customF', sCI: 'customI', sAsr: 'asr', sIsha: 'isha',
   sIsfar: 'isfar', sSunAlt: 'sunAlt', sStars: 'stars', sIstiwa: 'istiwa', sNightEnd: 'nightEnd',
-  sHigh: 'highLat', sIht: 'iht', sHumra: 'humra', sMaghribMin: 'maghribMin', sExitB: 'exitB', sKarB: 'karB', sH12: 'h12', sNu: 'nu', sTheme: 'theme',
+  sHigh: 'highLat', sIht: 'iht', sHumra: 'humra', sMaghribMin: 'maghribMin', sFadilaMin: 'fadilaMin', sExitB: 'exitB', sKarB: 'karB', sH12: 'h12', sNu: 'nu', sTheme: 'theme',
 };
-const CHECKS = { sAlerts: 'alerts', sEntry: 'entry', sSound: 'sound', sNotify: 'notify' };
+const CHECKS = { sAlerts: 'alerts', sEntry: 'entry', sSound: 'sound', sNotify: 'notify', sDuha: 'showDuha', sJumuah: 'showJumuah' };
 
 /** Apply cfg.theme to the document (auto = follow the OS). */
 export function applyTheme() {

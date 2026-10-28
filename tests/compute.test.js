@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { cfg, DEFAULTS, applyLocation, bumpVersion } from '../src/core/state.js';
-import { build } from '../src/core/compute.js';
+import { build, primaryDayRow } from '../src/core/compute.js';
 import { CITIES } from '../src/data/cities.js';
 
 const cityIdx = en => CITIES.findIndex(c => c.en.includes(en));
@@ -52,7 +52,7 @@ describe('prayer boundaries', () => {
         for (const d of [1, 15]) {
           const B = build({ y: 2026, m, d });
           if (B.polar) continue;
-          for (const p of B.prayers) {
+          for (const p of B.list) {
             for (let i = 0; i < p.marks.length; i++) {
               const mk = p.marks[i];
               expect(Number.isFinite(mk.at), `${en} ${m}/${d} ${mk.key}`).toBe(true);
@@ -72,7 +72,7 @@ describe('prayer boundaries', () => {
       for (const [m, d] of dates) {
         const B = build({ y: 2026, m, d });
         if (B.polar) continue;
-        for (const p of B.prayers) {
+        for (const p of B.list) {
           p.marks.forEach((mk, j) => {
             expect(Number.isFinite(mk.at), `${c.en} ${m}/${d} ${mk.key}`).toBe(true);
             if (j) expect(mk.at, `${c.en} ${m}/${d} ${mk.key}`).toBeGreaterThanOrEqual(p.marks[j - 1].at);
@@ -82,12 +82,19 @@ describe('prayer boundaries', () => {
     });
   });
 
-  it('Hanafi Asr starts at the 2× shadow and drops the khilaf mark', () => {
+  it("Asr 'two shadows for everyone' starts the whole Asr window at the second shadow", () => {
     useCity('Karachi', { asr: 'hanafi' });
     const B = build({ y: 2026, m: 6, d: 1 });
-    const asr = B.prayers.find(p => p.key === 'asr');
-    expect(asr.marks.map(m => m.key)).toEqual(['asr', 'isfirar', 'sunset']);
-    expect(B.T.asr).toBeGreaterThanOrEqual(Math.floor(B.e.asr2 / 60000) * 60000);
+    const asr = B.prayers.asr;
+    expect(asr.window.from).toBeGreaterThanOrEqual(Math.floor(B.e.asr2 / 60000) * 60000);
+    expect(asr.marks.find(m => m.key === 'asr').quiet).toBe(true); // nobody enters at one shadow
+  });
+
+  it("the day row is continuous apart from the 1-minute rounding margin", () => {
+    const row = primaryDayRow([{ y: 2026, m: 3, d: 19 }, { y: 2026, m: 3, d: 20 }]);
+    const day = row.filter(s => s.to > Date.UTC(2026, 2, 19, 21) && s.from < Date.UTC(2026, 2, 20, 21));
+    // only the rounding margin (entries round up, exits down) may separate two stretches
+    for (let i = 1; i < day.length; i++) expect(day[i].from - day[i - 1].to).toBeLessThanOrEqual(60000);
   });
 
   it('high latitude in summer: twilight is estimated, not missing', () => {
@@ -128,9 +135,9 @@ describe('prayer boundaries', () => {
     expect(build(dt).T.sunrise).toBe(mwl.sunrise);
   });
 
-  it('isfar opens a disputed (khilaf) zone, not karaha', () => {
-    const fajr = build({ y: 2026, m: 3, d: 20 }).prayers.find(p => p.key === 'fajr');
-    expect(fajr.marks.find(m => m.key === 'isfar').seg).toBe('khilaf');
+  it('isfar: the majority (Hanafi, Shafi\'i, Hanbali) see no sin, so it is jawaz, not karaha', () => {
+    const fajr = build({ y: 2026, m: 3, d: 20 }).prayers.fajr;
+    expect(fajr.marks.find(m => m.key === 'isfar').type).toBe('jawaz');
   });
 
   it('precaution margin moves entries later and exits earlier', () => {

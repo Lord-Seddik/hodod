@@ -4,27 +4,38 @@ import { build } from '../core/compute.js';
 import { fmtTime, fmtCsvTime, gregString, hijriString, hijriNumeric, daysInMonth, sameDay, todayLocal, isoDate } from '../core/time.js';
 import { $, esc } from './dom.js';
 import { toast } from './toast.js';
+import { PRAYERS } from '../data/rulings.js';
 
-// [mark key, header]
+// all-prayers view: [mark key, header]
 const COLUMNS = [
   ['fajr', 'الفجر'], ['isfar', 'الإسفار'], ['sunrise', 'الشروق'],
   ['dhuhr', 'الظهر'], ['asr', 'العصر'], ['asr2', 'ظل المثلين'], ['isfirar', 'الاصفرار'],
   ['maghrib', 'المغرب'], ['stars', 'الاشتباك'], ['isha', 'العشاء'], ['third', 'ثلث الليل'], ['half', 'نصف الليل'],
 ];
 
+const findMark = (B, key) => B.list?.flatMap(p => p.marks).find(m => m.key === key);
+
 /**
- * Columns for the current settings. Each column's color is the type that
- * mark opens for the selected madhabs; marks absent from the layout
- * (asr2 when Asr starts at two shadows) are dropped.
+ * Columns for the current view. All prayers: the classic set. One prayer: its
+ * own boundaries (those shown on any day of the month). Each column is colored
+ * by the type the mark opens for the active view.
  */
-function columns(rows) {
-  const ref = rows.find(r => !r.B.polar)?.B;
-  const marks = {};
-  ref?.prayers.forEach(p => p.marks.forEach(m => { marks[m.key] = m; }));
-  return COLUMNS.filter(([k]) => !ref || marks[k]).map(([key, head]) => {
-    const m = marks[key];
-    const exit = m?.kind === 'exit';
-    return { key, head, exit, type: exit ? 'exit' : (m?.seg || 'ok') };
+function columns(rows, prayerKey) {
+  const live = rows.filter(r => !r.B.polar);
+  let keys;
+  if (prayerKey) {
+    const seen = new Map();
+    live.forEach(({ B }) => B.prayers[prayerKey]?.marks.forEach((m, i) => {
+      if (!m.quiet && !m.context && !seen.has(m.key)) seen.set(m.key, [i, m.short]);
+    }));
+    keys = [...seen.entries()].sort((a, b) => a[1][0] - b[1][0]).map(([k, [, head]]) => [k, head]);
+  } else {
+    keys = COLUMNS.filter(([k]) => !live.length || live.some(({ B }) => k in B.T));
+  }
+  return keys.map(([key, head]) => {
+    const ref = live.map(({ B }) => findMark(B, key)).find(Boolean);
+    const exit = !!ref?.exit;
+    return { key, head, exit, type: exit ? 'exit' : (ref?.type || 'ok') };
   });
 }
 
@@ -37,9 +48,9 @@ function monthRows(sel) {
   return rows;
 }
 
-export function renderMonth(sel) {
-  const today = todayLocal(), rows = monthRows(sel), cols = columns(rows);
-  $('#monthTitle').textContent = gregString(sel, { month: 'long', year: 'numeric' }) + ' · ' + loc.name;
+export function renderMonth(sel, prayerKey) {
+  const today = todayLocal(), rows = monthRows(sel), cols = columns(rows, prayerKey);
+  $('#monthTitle').textContent = gregString(sel, { month: 'long', year: 'numeric' }) + ' · ' + loc.name + (prayerKey ? ' · ' + PRAYERS[prayerKey].name : '');
   const head = '<thead><tr><th scope="col">اليوم</th>' + cols.map(c => '<th scope="col" class="t-' + c.type + '"><i></i>' + c.head + '</th>').join('') + '</tr></thead>';
   const body = rows.map(({ dt, B }) => {
     const cells = cols.map(c => {
@@ -59,8 +70,8 @@ export function renderMonth(sel) {
 
 const csvCell = v => (/[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
 
-export function exportCsv(sel) {
-  const rows = monthRows(sel), cols = columns(rows);
+export function exportCsv(sel, prayerKey) {
+  const rows = monthRows(sel), cols = columns(rows, prayerKey);
   const lines = [['التاريخ', 'الهجري'].concat(cols.map(c => c.head)).map(csvCell).join(',')];
   rows.forEach(({ dt, B }) => {
     const times = cols.map(c => fmtCsvTime(B.polar ? NaN : B.T[c.key]));

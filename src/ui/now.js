@@ -3,7 +3,8 @@ import { MIN, clamp } from '../core/astro.js';
 import { cfg } from '../core/state.js';
 import { ensureTimeline, getPhases, afterText } from '../core/timeline.js';
 import { fmtClock, fmtTime, hms } from '../core/time.js';
-import { PRAYER_NAMES, SEGMENTS } from '../data/rulings.js';
+import { SEGMENTS, PRAYERS } from '../data/rulings.js';
+import { build, rulingsAt, describe } from '../core/compute.js';
 import { $, esc, setType, ICONS } from './dom.js';
 import { checkAlerts, nextAlert } from './alerts.js';
 
@@ -33,10 +34,11 @@ export function renderNow() {
     setProgress(0);
     document.title = APP_TITLE;
   } else if (gap) {
-    // rounding margin between one prayer's exit and the next one's entry
-    $('#nowPrayer').textContent = PRAYER_NAMES[ph.pkey] || ph.title;
-    pill.textContent = 'يدخل بعد لحظات'; setType(pill, 'ok');
-    $('#nowDesc').textContent = 'فاصل احتياط بين خروج الوقت السابق ودخول هذا الوقت.';
+    // between one prayer's exit and the next one's entry (rounding margin, or a
+    // selected madhab that has not entered yet)
+    $('#nowPrayer').textContent = ph.title;
+    pill.textContent = 'لم يدخل بعد'; setType(pill, 'prev');
+    $('#nowDesc').textContent = 'فاصل بين خروج الوقت السابق ودخول هذا الوقت عند المذاهب المختارة.';
     $('#countLabel').innerHTML = 'حتى <b>' + esc(ph.mark.short || 'دخول الوقت') + '</b>';
     $('#count').textContent = hms(ph.from - now);
     setType(card, 'ok');
@@ -45,8 +47,9 @@ export function renderNow() {
     document.title = hms(ph.from - now) + ' · ' + (ph.mark.short || APP_TITLE);
   } else {
     $('#nowPrayer').textContent = ph.title;
-    pill.textContent = SEGMENTS[ph.seg].pill; setType(pill, ph.seg);
-    $('#nowDesc').textContent = ph.mark.desc || '';
+    pill.textContent = (SEGMENTS[ph.seg] || SEGMENTS.none).pill; setType(pill, ph.seg);
+    // each madhab's status for this prayer right now
+    $('#nowDesc').textContent = (PRAYERS[ph.pkey] && ph.dt ? describe(rulingsAt(build(ph.dt), ph.pkey, now)) : ph.desc) || '';
     $('#countLabel').innerHTML = 'يبقى حتى <b>' + esc(ph.next.short) + '</b>';
     $('#count').textContent = hms(ph.to - now);
     const nextIsExit = ph.next.kind === 'exit';

@@ -1,162 +1,145 @@
 import { describe, it, expect } from 'vitest';
-import { cfg, DEFAULTS, applyLocation, bumpVersion, hanafiAsr } from '../src/core/state.js';
-import { build } from '../src/core/compute.js';
+import { cfg, DEFAULTS, applyLocation, bumpVersion } from '../src/core/state.js';
+import { build, madhabDayRow, displayRows } from '../src/core/compute.js';
 import { CITIES } from '../src/data/cities.js';
-import { MARKS, MADHABS, SEGMENTS, combineSegments, majoritySegment } from '../src/data/rulings.js';
+import { PRAYERS, MADHABS, SEGMENTS, combineMajority, combineSafe } from '../src/data/rulings.js';
 
-const dt = { y: 2026, m: 3, d: 20 };
+const THU = { y: 2026, m: 3, d: 19 }, FRI = { y: 2026, m: 3, d: 20 };
+const ALL = MADHABS.map(m => m.key);
+const MIN = 60000;
+
+/** Cairo (Egyptian method, Isha 17.5° — earlier than the white twilight). */
 function use(madhabs, overrides = {}) {
-  Object.assign(cfg, DEFAULTS, { cityIdx: CITIES.findIndex(c => c.en === 'Cairo'), custom: null, madhabs, rules: 'advanced' }, overrides);
+  const rules = madhabs ? 'advanced' : 'recommended';
+  Object.assign(cfg, DEFAULTS, { cityIdx: CITIES.findIndex(c => c.en === 'Cairo'), custom: null, rules, madhabs: madhabs || ALL }, overrides);
   applyLocation();
   bumpVersion();
 }
-const mark = (B, key) => B.prayers.flatMap(p => p.marks).find(m => m.key === key);
+const mark = (B, p, key) => B.prayers[p].marks.find(m => m.key === key);
+const valid = (B, p, m) => B.prayers[p].slices[m].filter(s => s.valid);
 
 describe('rulings data', () => {
-  it('every boundary rules for all four madhabs with a known type and a note', () => {
-    for (const [key, T] of Object.entries(MARKS)) {
-      if (!T.by) continue;
-      for (const m of MADHABS) {
-        const r = T.by[m.key] || T.by.all;
-        expect(r, key + ' / ' + m.key).toBeTruthy();
-        expect(SEGMENTS[r.seg], key + ' / ' + m.key).toBeTruthy();
-        expect(r.note, key + ' / ' + m.key).toBeTruthy();
+  it('every boundary rules for all four madhabs', () => {
+    for (const [pk, P] of Object.entries(PRAYERS)) {
+      for (const md of P.marks) {
+        if (!md.by) continue;
+        for (const m of ALL) expect(md.by[m] !== undefined || md.by.all !== undefined, pk + '/' + md.key + '/' + m).toBe(true);
       }
     }
   });
 });
 
-describe('combineSegments', () => {
-  it('agreement keeps the type', () => expect(combineSegments(['ok', 'ok'])).toBe('ok'));
-  it('karaha + darura → kd', () => expect(combineSegments(['karaha', 'darura', 'karaha'])).toBe('kd'));
-  it('nahy + not-nahy → nahy (cautious)', () => expect(combineSegments(['nahy', 'free', 'nahy'])).toBe('nahy'));
-  it('anything else → khilaf', () => expect(combineSegments(['ok', 'darura'])).toBe('khilaf'));
+describe('combining', () => {
+  it('majority: more than half wins', () => expect(combineMajority(['prev', 'fadila', 'fadila', 'fadila'])).toBe('fadila'));
+  it('majority: chosen-time group', () => expect(combineMajority(['fadila', 'ok', 'ok', 'darura'])).toBe('ok'));
+  it('majority: no-sin group → jawaz', () => expect(combineMajority(['fadila', 'darura', 'jawaz', 'ok'])).toBe('jawaz'));
+  it('majority: blameworthy group → kd', () => expect(combineMajority(['karaha', 'darura', 'jawaz', 'darura'])).toBe('kd'));
+  it('majority: an even split → khilaf', () => expect(combineMajority(['jawaz', 'darura', 'jawaz', 'darura'])).toBe('khilaf'));
+  it('safe: the most cautious', () => {
+    expect(combineSafe(['fadila', 'darura', 'ok'])).toBe('darura');
+    expect(combineSafe(['ok', 'prev'])).toBe('prev');
+  });
 });
 
-describe('madhab filter', () => {
-  it('isfar: each madhab gets its own verdict', () => {
-    const seg = m => { use([m]); return mark(build(dt), 'isfar').seg; };
-    expect(seg('hanafi')).toBe('ok');
-    expect(seg('maliki')).toBe('darura');
-    expect(seg('shafii')).toBe('jawaz');
-    expect(seg('hanbali')).toBe('ok');
-    use(['hanafi', 'hanbali']);
-    expect(mark(build(dt), 'isfar').seg).toBe('ok');
-    use(['maliki', 'shafii']);
-    expect(mark(build(dt), 'isfar').seg).toBe('khilaf');
+describe('recommended (agreement and the majority)', () => {
+  it('colors each boundary by the majority of the four', () => {
+    use(null);
+    const B = build(THU);
+    expect(mark(B, 'asr', 'asr').type).toBe('fadila');       // Abu Hanifa has not entered yet
+    expect(mark(B, 'fajr', 'isfar').type).toBe('jawaz');     // only the Malikis see sin
+    expect(mark(B, 'asr', 'isfirar').type).toBe('kd');       // all blameworthy
+    expect(mark(B, 'isha', 'third').type).toBe('khilaf');    // 2–2
+    expect(mark(B, 'isha', 'half').type).toBe('kd');         // three of four
+    expect(mark(B, 'dhuhr', 'istiwa').type).toBe('nahy');
+    expect(build(FRI).prayers.dhuhr.marks.find(m => m.key === 'istiwa').type).toBe('nahy'); // 2–2, the cautious reading
   });
 
-  it('isfirar: all four agree it is blameworthy → kd', () => {
-    use(MADHABS.map(m => m.key));
-    expect(mark(build(dt), 'isfirar').seg).toBe('kd');
+  it('describes a boundary in one sentence', () => {
+    use(null);
+    expect(mark(build(THU), 'asr', 'asr').desc).toBe('أفضل الوقت عند المالكية والشافعية والحنابلة، ولم يدخل الوقت بعد عند الحنفية.');
   });
 
-  it('istiwa is not a forbidden time for Malikis alone', () => {
+  it('shows one combined row', () => {
+    use(null);
+    expect(displayRows([THU], 'fajr')).toHaveLength(1);
+  });
+
+  it('hides boundaries that do not change the majority picture', () => {
+    use(null);
+    expect(mark(build(THU), 'maghrib', 'maghribMukhtar').quiet).toBe(true);
+  });
+});
+
+describe('one madhab', () => {
+  it('Hanafi: Asr at two shadows, Isha at the white twilight, isfar is the best Fajr time', () => {
+    use(['hanafi']);
+    const B = build(THU);
+    expect(B.prayers.asr.window.from).toBeGreaterThanOrEqual(Math.floor(B.e.asr2 / MIN) * MIN);
+    expect(B.prayers.isha.window.from).toBeGreaterThanOrEqual(Math.floor(B.e.ishaWhite / MIN) * MIN);
+    expect(B.e.ishaWhite).toBeGreaterThan(B.e.isha);
+    expect(B.prayers.maghrib.window.to).toBe(B.prayers.isha.window.from > 0 ? mark(B, 'maghrib', 'maghribWhite').at : 0);
+    const best = valid(B, 'fajr', 'hanafi').find(s => s.type === 'fadila');
+    expect(best.from).toBe(mark(B, 'fajr', 'isfar').at);
+  });
+
+  it('Maliki: Maghrib necessity time runs to Fajr, Dhuhr necessity to sunset', () => {
     use(['maliki']);
-    expect(mark(build(dt), 'istiwa').seg).toBe('free');
-    use(MADHABS.map(m => m.key));
-    expect(mark(build(dt), 'istiwa').seg).toBe('nahy');
+    const B = build(THU), next = build({ y: 2026, m: 3, d: 20 });
+    expect(B.prayers.maghrib.window.to).toBe(mark(B, 'maghrib', 'maghribFajr').at);
+    expect(mark(B, 'maghrib', 'maghribMukhtar').type).toBe('darura');
+    expect(B.prayers.dhuhr.window.to).toBe(mark(B, 'dhuhr', 'dhuhrSunset').at);
+    expect(next.polar).toBe(false);
   });
 
-  it('description is one note per madhab when they differ, a single note when they match', () => {
-    use(['maliki', 'shafii']);
-    expect(mark(build(dt), 'isfar').desc.split('\n')).toHaveLength(2);
-    use(['hanafi']);
-    expect(mark(build(dt), 'isfar').desc).not.toContain('\n');
+  it("Maliki day row: during Asr the row shows Asr, not Dhuhr's necessity time", () => {
+    use(['maliki']);
+    const B = build(THU), t = B.e.asr1 + 30 * MIN;
+    const s = madhabDayRow('maliki', [THU]).find(x => x.from <= t && t < x.to);
+    expect(s.prayer).toBe('asr');
   });
 
-  it("Asr 'auto' follows the madhab: two shadows only for Hanafi alone", () => {
-    use(['hanafi']);
-    expect(hanafiAsr()).toBe(true);
-    expect(build(dt).prayers.find(p => p.key === 'asr').marks.map(m => m.key)).toEqual(['asr', 'isfirar', 'sunset']);
+  it("Shafi'i: karaha from the redness before sunrise; istiwa free on Friday", () => {
+    use(['shafii']);
+    expect(mark(build(THU), 'fajr', 'humra').type).toBe('karaha');
+    expect(mark(build(THU), 'dhuhr', 'istiwa').type).toBe('nahy');
+    expect(mark(build(FRI), 'dhuhr', 'istiwa').type).toBe('free');
+  });
+
+  it('Hanbali: Jumu\'ah may start at the time of the Eid prayer', () => {
+    use(['hanbali']);
+    const B = build(FRI);
+    expect(B.prayers.jumuah.window.from).toBe(mark(B, 'jumuah', 'jumuahEarly').at);
+    expect(mark(B, 'jumuah', 'jumuahEarly').type).toBe('jawaz');
+    expect(build(THU).prayers.jumuah).toBeUndefined();
+  });
+
+  it('the best time ("early") lasts fadilaMin minutes', () => {
+    use(['shafii'], { fadilaMin: 25 });
+    const s = valid(build(THU), 'dhuhr', 'shafii').find(x => x.type === 'fadila');
+    expect((s.to - s.from) / MIN).toBe(25);
+  });
+});
+
+describe('several madhabs', () => {
+  it('draws a safe row plus one row per madhab', () => {
     use(['hanafi', 'shafii']);
-    expect(hanafiAsr()).toBe(false);
-    use(['hanafi'], { asr: 'std' });
-    expect(hanafiAsr()).toBe(false);
+    const rows = displayRows([THU], 'asr');
+    expect(rows.map(r => r.label)).toEqual(['الآمن للجميع', 'الحنفية', 'الشافعية']);
   });
 
-  it('Isha: half the night is a boundary, the exit is Fajr', () => {
-    use(MADHABS.map(m => m.key));
-    const B = build(dt);
-    expect(mark(B, 'half').kind).toBe('bound');
-    expect(mark(B, 'ishaExit').kind).toBe('exit');
-  });
-});
-
-describe('school-specific boundaries', () => {
-  it("Hanafi only: Isha follows the white twilight (18°) automatically", () => {
-    use(['hanafi']);
-    const hanafiIsha = build(dt).e.isha;
-    expect(build(dt).e.M.ishaAngle).toBe(18);
-    use(MADHABS.map(m => m.key)); // Cairo, Egyptian method: 17.5°
-    expect(build(dt).e.M.ishaAngle).toBe(17.5);
-    expect(hanafiIsha).toBeGreaterThan(build(dt).e.isha);
-    use(['hanafi'], { isha: 'method' }); // forced back to the method
-    expect(build(dt).e.M.ishaAngle).toBe(17.5);
+  it('the safe row starts where every selected madhab has entered', () => {
+    use(['hanafi', 'shafii']);
+    const B = build(THU);
+    const safe = displayRows([THU], 'asr')[0].slices;
+    expect(safe[0].from).toBeGreaterThanOrEqual(Math.floor(B.e.asr2 / MIN) * MIN);
   });
 
-  it("Shafi'i redness mark sits between isfar and sunrise, only when Shafi'i is selected", () => {
-    use(['shafii']);
-    const B = build(dt), h = mark(B, 'humra');
-    expect(h.seg).toBe('karaha');
-    expect(h.at).toBeGreaterThan(mark(B, 'isfar').at);
-    expect(h.at).toBeLessThanOrEqual(mark(B, 'sunrise').at);
-    use(['hanafi', 'maliki', 'hanbali']);
-    expect(mark(build(dt), 'humra')).toBeUndefined();
-  });
-
-  it('Maliki narrow Maghrib ends maghribMin minutes after sunset, only when Maliki is selected', () => {
-    use(['maliki'], { maghribMin: 20 });
-    const B = build(dt), m = mark(B, 'maghribMukhtar');
-    expect(m.seg).toBe('darura');
-    expect(Math.round((m.raw - B.e.sunset) / 60000)).toBe(20);
-    use(['shafii']);
-    expect(mark(build(dt), 'maghribMukhtar')).toBeUndefined();
-  });
-
-  it("Friday: istiwa is not a forbidden time for Shafi'is", () => {
-    use(['shafii']);
-    expect(mark(build({ y: 2026, m: 10, d: 30 }), 'istiwa').seg).toBe('free'); // Friday
-    expect(mark(build({ y: 2026, m: 10, d: 29 }), 'istiwa').seg).toBe('nahy'); // Thursday
-    use(['shafii', 'hanafi']);
-    expect(mark(build({ y: 2026, m: 10, d: 30 }), 'istiwa').seg).toBe('nahy'); // Hanafis still forbid it
-  });
-});
-
-describe('recommended mode (agreement and the majority)', () => {
-  const rec = (overrides = {}) => use(['hanafi'], { rules: 'recommended', ...overrides }); // madhab pick is ignored
-
-  it('majoritySegment: more than half wins, else blameworthy → kd, else khilaf', () => {
-    expect(majoritySegment(['prev', 'ok', 'ok', 'ok'])).toBe('ok');
-    expect(majoritySegment(['karaha', 'darura', 'jawaz', 'darura'])).toBe('kd');
-    expect(majoritySegment(['ok', 'darura', 'jawaz', 'ok'])).toBe('khilaf');
-  });
-
-  it('uses all four madhabs whatever was picked in advanced mode', () => {
-    rec();
-    const B = build(dt);
-    expect(mark(B, 'asr').seg).toBe('ok');         // majority: one shadow (Abu Hanifa differs)
-    expect(mark(build({ y: 2026, m: 3, d: 19 }), 'istiwa').seg).toBe('nahy'); // Thursday: only Malikis differ
-    expect(mark(B, 'istiwa').seg).toBe('khilaf');  // Friday (20 Mar): Shafi'is join the Malikis, 2–2
-    expect(mark(B, 'isfar').seg).toBe('khilaf');   // no majority
-    expect(mark(B, 'isfirar').seg).toBe('kd');     // all blameworthy, split karaha/darura
-    expect(mark(B, 'half').seg).toBe('kd');        // three of four
-    expect(B.prayers.find(p => p.key === 'asr').marks.map(m => m.key)).toEqual(['asr', 'asr2', 'isfirar', 'sunset']);
-    expect(B.e.M.ishaAngle).toBe(17.5); // Cairo method, not the Hanafi white twilight
-  });
-
-  it('hides school-specific boundaries', () => {
-    rec();
-    const B = build(dt);
-    expect(mark(B, 'humra')).toBeUndefined();
-    expect(mark(B, 'maghribMukhtar')).toBeUndefined();
-  });
-
-  it('describes each boundary in one sentence', () => {
-    rec();
-    const B = build(dt);
-    expect(mark(B, 'asr').desc).toBe('وقت اختيار عند المالكية والشافعية والحنابلة، ولم يدخل الوقت بعد عند الحنفية.');
-    expect(mark(B, 'dhuhr').desc).toBe('وقت اختيار باتفاق المذاهب.');
-    expect(mark(B, 'isfar').desc).not.toContain('\n');
+  it('chips appear where they disagree', () => {
+    use(['maliki', 'shafii']);
+    const m = mark(build(THU), 'fajr', 'isfar');
+    expect(m.agree).toBe(false);
+    expect(m.type).toBe('darura'); // the most cautious
+    expect(m.desc.split('\n')).toHaveLength(2);
+    expect(SEGMENTS[m.rulings[1].type].pill).toBe('جواز');
   });
 });

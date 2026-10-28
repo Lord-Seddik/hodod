@@ -62,9 +62,9 @@ tests/
 | Add a city | append to `src/data/cities.js` (append, don't reorder: saved choices store the index). The picker groups cities by country automatically, and `npm test` checks every entry's time zone, coordinates and method |
 | Add / adjust a calculation method | `src/data/methods.js` |
 | Default settings or allowed ranges | `DEFAULTS` / `LIMITS` in `src/core/state.js` |
-| A boundary's ruling and color per madhab | the `by` table of that mark in `src/data/rulings.js` |
-| How selected madhabs combine into one color | `combineSegments()` in `src/data/rulings.js` |
-| Which boundaries exist | `computeBuild()` in `src/core/compute.js` |
+| A prayer's boundaries, each madhab's ruling and best time | `PRAYERS` in `src/data/rulings.js` (the `by` table of each mark) |
+| How madhabs combine (majority / safe for all) | `combineMajority()` / `combineSafe()` in `src/data/rulings.js` |
+| Times outside the obligatory prayers (sunrise, Duha, istiwa) | `CONTEXT` in `src/data/rulings.js` |
 | Colors / fonts / dark theme | `src/styles/tokens.css` |
 | Month table columns | `COLUMNS` in `src/ui/month.js` |
 
@@ -74,9 +74,13 @@ tests/
 
 ## Notes
 
-- **Rulings mode** (settings → الأحكام): *recommended* (default) colors each time by the agreement or
-  the majority (3 of 4) of the four madhabs (`majoritySegment()`), in the classic one-verdict look.
-  *Advanced* shows the madhab buttons and the details toggle, plus school-specific boundaries.
+- **Madhab selector:** «الجمهور» (default) colors each time by the agreement or the majority (3 of 4)
+  of the four madhabs, in the classic one-verdict look. One madhab shows only its rulings and its own
+  boundaries; several show a row per madhab plus a «الآمن للجميع» row (the most cautious verdict).
+- **Prayer selector:** zooms the timeline to one prayer's window, from the first entry to the last exit
+  among the selected madhabs. Duha/Ishraq and Jumu'ah (Fridays) are optional in settings.
+- **Entry times:** the official method's time, never earlier; a madhab's own definition when it is later
+  (Hanafi Asr at two shadows, Hanafi Isha at the white twilight).
 
 - Calculations are approximate (about 1–2 minutes). Entries round up to the next minute; exits and
   karaha boundaries round down, as a precaution.
