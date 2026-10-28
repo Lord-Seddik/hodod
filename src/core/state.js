@@ -9,8 +9,10 @@ export const DEFAULTS = {
   v: 2, // settings format version
   // location
   cityIdx: -1, custom: null,
-  // madhabs whose rulings are shown (at least one)
-  madhabs: ALL_MADHABS,
+  // rulings: 'recommended' = agreement and the majority of the four madhabs;
+  // 'advanced' = the user picks madhabs (cfg.madhabs) and the detail level (cfg.details)
+  rules: 'recommended',
+  madhabs: ALL_MADHABS, // advanced only; at least one
   // calculation; 'auto' follows the madhab (Hanafi only → two shadows, white twilight)
   method: 'AUTO', customF: 18, customI: 17, asr: 'auto', isha: 'auto',
   // boundary definitions
@@ -44,6 +46,7 @@ function sanitize() {
   if (!CITIES[cfg.cityIdx]) cfg.cityIdx = -1;
   if (!['auto', 'method', 'red', 'white'].includes(cfg.isha)) cfg.isha = 'auto';
   if (!['auto', 'std', 'hanafi'].includes(cfg.asr)) cfg.asr = 'auto';
+  if (!['recommended', 'advanced'].includes(cfg.rules)) cfg.rules = 'recommended';
   const picked = Array.isArray(cfg.madhabs) ? ALL_MADHABS.filter(k => cfg.madhabs.includes(k)) : [];
   cfg.madhabs = picked.length ? picked : ALL_MADHABS;
 }
@@ -55,6 +58,8 @@ try {
     // v1 saved asr:'std' / isha:'method' as defaults; 'auto' gives the same times with all madhabs
     if (!saved.v && saved.asr === 'std') saved.asr = 'auto';
     if (!saved.v && saved.isha === 'method') saved.isha = 'auto';
+    // someone who already narrowed the madhabs keeps that view (advanced)
+    if (!saved.rules && Array.isArray(saved.madhabs) && saved.madhabs.length < ALL_MADHABS.length) saved.rules = 'advanced';
     Object.assign(cfg, saved, { v: DEFAULTS.v });
   }
 } catch { /* storage unavailable */ }
@@ -115,7 +120,12 @@ applyLocation();
 
 export const methodKey = () => (cfg.method === 'AUTO' ? loc.method : cfg.method);
 
-const hanafiOnly = () => cfg.madhabs.length === 1 && cfg.madhabs[0] === 'hanafi';
+export const isAdvanced = () => cfg.rules === 'advanced';
+
+/** Madhabs whose rulings are in effect: the user's pick (advanced) or all four (recommended). */
+export const activeMadhabs = () => (isAdvanced() ? cfg.madhabs : ALL_MADHABS);
+
+const hanafiOnly = () => { const m = activeMadhabs(); return m.length === 1 && m[0] === 'hanafi'; };
 
 /** Asr starts at two shadow lengths: chosen explicitly, or 'auto' with only Hanafi selected. */
 export const hanafiAsr = () => cfg.asr === 'hanafi' || (cfg.asr === 'auto' && hanafiOnly());

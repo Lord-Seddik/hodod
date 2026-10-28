@@ -22,30 +22,65 @@ export const MADHABS = [
 ];
 
 // phase types (colors live in styles/tokens.css as --ok, --jawaz, …)
+// pill: short badge · phrase: wording inside a sentence ("… عند المالكية")
 export const SEGMENTS = {
-  ok:     { pill: 'وقت اختيار' },
-  jawaz:  { pill: 'جواز' },
-  khilaf: { pill: 'منطقة خلاف' },
-  karaha: { pill: 'كراهة' },
-  darura: { pill: 'ضرورة' },
-  kd:     { pill: 'كراهة أو ضرورة' }, // selected madhabs split between karaha and darura
-  nahy:   { pill: 'وقت نهي' },
-  free:   { pill: 'ليس وقت نهي' },   // where one madhab sees no forbidden time
-  prev:   { pill: 'لم يدخل بعد' },   // this prayer has not started yet for that madhab
-  idle:   { pill: 'لا فريضة' },
+  ok:     { pill: 'وقت اختيار', phrase: 'وقت اختيار' },
+  jawaz:  { pill: 'جواز', phrase: 'جواز بلا كراهة' },
+  khilaf: { pill: 'منطقة خلاف', phrase: 'محل خلاف' },
+  karaha: { pill: 'كراهة', phrase: 'كراهة' },
+  darura: { pill: 'ضرورة', phrase: 'ضرورة يأثم المؤخِّر إليها بلا عذر' },
+  kd:     { pill: 'كراهة أو ضرورة', phrase: 'كراهة أو ضرورة' }, // split between karaha and darura
+  nahy:   { pill: 'وقت نهي', phrase: 'وقت نهي' },
+  free:   { pill: 'ليس وقت نهي', phrase: 'ليس وقت نهي' },   // where one madhab sees no forbidden time
+  prev:   { pill: 'لم يدخل بعد', phrase: 'لم يدخل الوقت بعد' }, // prayer not started yet for that madhab
+  idle:   { pill: 'لا فريضة', phrase: 'لا فريضة' },
 };
 
+const BAD = t => t === 'karaha' || t === 'darura';
+
 /**
- * Combine the selected madhabs' types for one phase:
+ * Advanced mode — combine the selected madhabs' types for one phase:
  * all agree → that type; all karaha/darura → kd; nahy vs. not-nahy → nahy
  * (the cautious reading); otherwise → khilaf.
  */
 export function combineSegments(types) {
   const set = new Set(types);
   if (set.size === 1) return types[0];
-  if ([...set].every(t => t === 'karaha' || t === 'darura')) return 'kd';
+  if ([...set].every(BAD)) return 'kd';
   if (set.has('nahy') && [...set].every(t => t === 'nahy' || t === 'free')) return 'nahy';
   return 'khilaf';
+}
+
+/**
+ * Recommended mode — agreement or the majority (jumhur) of all four madhabs:
+ * a type held by more than half wins; if more than half find it blameworthy
+ * (karaha or darura) → kd; otherwise → khilaf.
+ */
+export function majoritySegment(types) {
+  const half = types.length / 2, count = {};
+  for (const t of types) count[t] = (count[t] || 0) + 1;
+  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];
+  if (top[1] > half) return top[0];
+  if (types.filter(BAD).length > half) return 'kd';
+  return 'khilaf';
+}
+
+/**
+ * One sentence in the old style: "وقت اختيار باتفاق المذاهب." or
+ * "وقت اختيار عند المالكية والشافعية والحنابلة، ولم يدخل الوقت بعد عند الحنفية."
+ * rulings: [{ name, seg, note }]
+ */
+export function summarize(rulings) {
+  const notes = new Set(rulings.map(r => r.note));
+  if (notes.size === 1) return rulings[0].note;
+  const groups = [];
+  for (const r of rulings) {
+    const g = groups.find(x => x.seg === r.seg);
+    if (g) g.names.push(r.name); else groups.push({ seg: r.seg, names: [r.name] });
+  }
+  if (groups.length === 1) return SEGMENTS[groups[0].seg].phrase + ' باتفاق المذاهب.';
+  groups.sort((a, b) => b.names.length - a.names.length);
+  return groups.map((g, i) => (i ? 'و' : '') + SEGMENTS[g.seg].phrase + ' عند ' + g.names.join(' و')).join('، ') + '.';
 }
 
 const DARURA_SIN = 'وقت ضرورة يأثم المؤخِّر إليه بلا عذر، والصلاة أداء.';

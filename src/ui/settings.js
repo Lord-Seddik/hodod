@@ -7,7 +7,7 @@ import { toast } from './toast.js';
 
 // form control id → cfg key
 const FIELDS = {
-  sMethod: 'method', sCF: 'customF', sCI: 'customI', sAsr: 'asr', sIsha: 'isha',
+  sRules: 'rules', sMethod: 'method', sCF: 'customF', sCI: 'customI', sAsr: 'asr', sIsha: 'isha',
   sIsfar: 'isfar', sSunAlt: 'sunAlt', sStars: 'stars', sIstiwa: 'istiwa', sNightEnd: 'nightEnd',
   sHigh: 'highLat', sIht: 'iht', sHumra: 'humra', sMaghribMin: 'maghribMin', sExitB: 'exitB', sKarB: 'karB', sH12: 'h12', sNu: 'nu', sTheme: 'theme',
 };

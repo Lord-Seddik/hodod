@@ -74,8 +74,8 @@
     </div>
   </nav>
 
-  <!-- madhab filter + details toggle -->
-  <div class="filters">
+  <!-- madhab filter + details toggle (advanced mode only) -->
+  <div class="filters" id="filters" hidden>
     <div class="madhabs" role="group" aria-label="المذاهب المعروضة" id="madhabBar"></div>
     <button class="btn sm" id="detailsBtn" type="button" aria-pressed="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
@@ -94,18 +94,6 @@
     </section>
     <div class="polar" id="polarMsg" hidden></div>
     <section class="grid" id="cards" aria-label="الصلوات"></section>
-    <section class="panel legend-panel">
-      <div class="panel-head"><h3>دلالة الألوان</h3></div>
-      <div class="legend">
-        <div class="t-ok"><i class="dot"></i><p><b>وقت الاختيار.</b> <span>يجوز الأداء بلا حرج، وهو المختار أو المستحب.</span></p></div>
-        <div class="t-jawaz"><i class="dot"></i><p><b>جواز.</b> <span>أداء بلا إثم ولا كراهة، لكنه خارج المختار.</span></p></div>
-        <div class="t-khilaf"><i class="dot"></i><p><b>منطقة خلاف.</b> <span>تختلف فيها أحكام المذاهب المختارة؛ التفصيل تحت كل حدّ.</span></p></div>
-        <div class="t-karaha"><i class="dot"></i><p><b>كراهة.</b> <span>الصلاة أداء مع الكراهة، أو كراهة وضرورة إذا اختلفت المذاهب المختارة.</span></p></div>
-        <div class="t-darura"><i class="dot"></i><p><b>ضرورة.</b> <span>الصلاة أداء، ويأثم المؤخِّر إليها بلا عذر.</span></p></div>
-        <div class="t-exit"><i class="dot"></i><p><b>الخروج.</b> <span>تصير الصلاة بعده قضاءً.</span></p></div>
-        <div class="t-nahy"><i class="dot"></i><p><b>وقت نهي.</b> <span>لا تُبتدأ فيه نافلة مطلقة.</span></p></div>
-      </div>
-    </section>
   </div>
 
   <!-- month view -->
@@ -118,7 +106,22 @@
       </button>
     </div>
     <div class="table-wrap"><table id="monthTable"></table></div>
-    <p class="hint">الأحمر: أوقات الخروج. لون كل عمود هو حكم ما بعد ذلك الحدّ عند المذاهب المختارة.</p>
+    <p class="hint">الأحمر: أوقات الخروج. لون كل عمود هو حكم ما بعد ذلك الحدّ، ودلالته في مفتاح الألوان أدناه.</p>
+  </section>
+
+  <!-- color key: shown in both views -->
+  <section class="panel legend-panel" aria-labelledby="legendTitle">
+    <div class="panel-head"><h3 id="legendTitle">مفتاح الألوان</h3><span class="muted" id="legendNote"></span></div>
+    <div class="legend">
+      <div class="t-ok"><i class="dot"></i><p><b>وقت الاختيار.</b> <span>يجوز الأداء بلا حرج، وهو المختار أو المستحب.</span></p></div>
+      <div class="t-jawaz adv-only"><i class="dot"></i><p><b>جواز.</b> <span>أداء بلا إثم ولا كراهة، لكنه خارج المختار.</span></p></div>
+      <div class="t-khilaf"><i class="dot"></i><p><b>منطقة خلاف.</b> <span>تختلف فيها المذاهب ولا جمهور فيها؛ التفصيل في الوصف.</span></p></div>
+      <div class="t-karaha"><i class="dot"></i><p><b>كراهة أو ضرورة.</b> <span>الصلاة أداء، مع الكراهة أو مع الإثم لمن أخّر بلا عذر بحسب المذهب.</span></p></div>
+      <div class="t-darura adv-only"><i class="dot"></i><p><b>ضرورة.</b> <span>الصلاة أداء، ويأثم المؤخِّر إليها بلا عذر.</span></p></div>
+      <div class="t-exit"><i class="dot"></i><p><b>الخروج.</b> <span>تصير الصلاة بعده قضاءً.</span></p></div>
+      <div class="t-nahy"><i class="dot"></i><p><b>وقت نهي.</b> <span>لا تُبتدأ فيه نافلة مطلقة.</span></p></div>
+      <div class="t-idle"><i class="dot"></i><p><b>لا فريضة.</b> <span>وقت الضحى، أو وقت لم يدخل بعد أو ليس نهياً عند بعض المذاهب.</span></p></div>
+    </div>
   </section>
 
   <!-- upcoming alerts -->
@@ -181,6 +184,15 @@
 <dialog id="setDlg" aria-labelledby="setDlgTitle">
   <form class="dlg" id="setForm" method="dialog">
     <div class="dlg-head"><h3 id="setDlgTitle">الإعدادات</h3><button class="btn sm" value="cancel" type="submit">تم</button></div>
+
+    <fieldset>
+      <legend>الأحكام</legend>
+      <label>طريقة العرض<select id="sRules">
+        <option value="recommended">الموصى به: ما اتفقت عليه المذاهب وقول الجمهور</option>
+        <option value="advanced">متقدّم: اختيار المذاهب ومستوى التفاصيل</option>
+      </select></label>
+      <p class="note">في الوضع المتقدّم يظهر شريط لاختيار المذاهب وزر لإظهار التفاصيل أو إخفائها، مع حدود خاصة ببعض المذاهب كالحمرة عند الشافعية ومختار المغرب عند المالكية.</p>
+    </fieldset>
 
     <fieldset>
       <legend>طريقة الحساب الرسمية</legend>

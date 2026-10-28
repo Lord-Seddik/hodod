@@ -74,6 +74,10 @@ tests/
 
 ## Notes
 
+- **Rulings mode** (settings → الأحكام): *recommended* (default) colors each time by the agreement or
+  the majority (3 of 4) of the four madhabs (`majoritySegment()`), in the classic one-verdict look.
+  *Advanced* shows the madhab buttons and the details toggle, plus school-specific boundaries.
+
 - Calculations are approximate (about 1–2 minutes). Entries round up to the next minute; exits and
   karaha boundaries round down, as a precaution.
 - Alerts fire while the page is open. Turn on **إشعارات النظام** in settings to get them while the tab is in the background.

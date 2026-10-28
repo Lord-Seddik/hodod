@@ -62,12 +62,16 @@
 .mz-note{display:block;font-size:12.5px;line-height:1.55;color:var(--ink);opacity:.85}
 .mz-note i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-inline-end:6px;vertical-align:1px}
 
-/* compact view: hide sub-lines, notes, and boundaries that change nothing */
+/* recommended mode: the classic look, one verdict per boundary */
+.mode-rec .mz-chips,
+.mode-rec .mz-notes,
+.mode-rec .adv-only{display:none}
+
+/* advanced compact view: hide sub-lines, notes, and boundaries that change nothing */
 .compact .mk .lbl small,
 .compact .mz-notes,
 .compact .mk.quiet,
-.compact .mk.minor,
-.compact .legend-panel{display:none}
+.compact .mk.minor{display:none}
 .compact .mk{padding-block:5px}
 
 .polar{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}

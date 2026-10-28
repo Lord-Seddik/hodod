@@ -1,5 +1,5 @@
 // App shell: view state, rendering orchestration, navigation, timers.
-import { cfg, loc, saveSettings, bumpVersion, hanafiAsr } from './core/state.js';
+import { cfg, loc, saveSettings, bumpVersion, hanafiAsr, isAdvanced } from './core/state.js';
 import { MADHABS } from './data/rulings.js';
 import { build, methodParams } from './core/compute.js';
 import { ensureTimeline, currentPhase, phaseId } from './core/timeline.js';
@@ -68,15 +68,20 @@ function renderMethodLine() {
   $('#methodLine').textContent = 'طريقة الحساب: ' + M.name + ' · الفجر ' + M.fajrAngle + '° · العشاء ' + M.ishaDesc
     + (adj.length ? ' · تعديل رسمي: ' + adj.join('، ') : '')
     + ' · العصر ' + (hanafiAsr() ? 'ظل المثلين' : 'ظل المثل')
-    + ' · الأحكام: ' + MADHABS.filter(m => cfg.madhabs.includes(m.key)).map(m => m.name).join('، ')
+    + ' · الأحكام: ' + (isAdvanced() ? MADHABS.filter(m => cfg.madhabs.includes(m.key)).map(m => m.name).join('، ') : 'الاتفاق وقول الجمهور')
     + ' · ' + loc.lat.toFixed(3) + '، ' + loc.lon.toFixed(3) + ' · ' + loc.tz;
 }
 
+/** Advanced mode shows the madhab bar and details toggle; recommended keeps the classic look. */
 function renderFilters() {
+  const adv = isAdvanced(), app = $('#app');
+  $('#filters').hidden = !adv;
   $('#madhabBar').innerHTML = MADHABS.map(m =>
     '<button type="button" data-m="' + m.key + '" aria-pressed="' + cfg.madhabs.includes(m.key) + '">' + m.name + '</button>').join('');
   $('#detailsBtn').setAttribute('aria-pressed', String(!!cfg.details));
-  $('#app').classList.toggle('compact', !cfg.details);
+  app.classList.toggle('mode-rec', !adv);
+  app.classList.toggle('compact', adv && !cfg.details);
+  $('#legendNote').textContent = adv ? 'بحسب المذاهب المختارة' : 'بحسب الاتفاق وقول الجمهور';
 }
 
 function renderAll() {
@@ -172,7 +177,7 @@ function initNavigation() {
     else if (e.key === 'ArrowRight') shift(-1);
     else if (e.code === 'KeyT') goToday(); // physical key, so it works on Arabic layouts too
     else if (e.code === 'KeyM') setMode(view.mode === 'day' ? 'month' : 'day');
-    else if (e.code === 'KeyD') $('#detailsBtn').click();
+    else if (e.code === 'KeyD' && isAdvanced()) $('#detailsBtn').click();
     else return;
     e.preventDefault();
   });

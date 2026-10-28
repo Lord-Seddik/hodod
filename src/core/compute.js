@@ -1,9 +1,9 @@
 // Prayer boundaries for a date: raw solar events → rounded, ordered marks.
 import { solar, clamp, MIN, HOUR } from './astro.js';
-import { cfg, loc, methodKey, hanafiAsr, ishaRule, version } from './state.js';
+import { cfg, loc, methodKey, hanafiAsr, ishaRule, isAdvanced, activeMadhabs, version } from './state.js';
 import { addDays, hijriMonth } from './time.js';
 import { METHODS } from '../data/methods.js';
-import { MARKS, MADHABS, PRAYER_NAMES, combineSegments } from '../data/rulings.js';
+import { MARKS, MADHABS, PRAYER_NAMES, combineSegments, majoritySegment, summarize } from '../data/rulings.js';
 
 /** Effective Fajr/Isha parameters for a date (Isha may depend on Ramadan). */
 export function methodParams(dt) {
@@ -150,13 +150,14 @@ function computeBuild(dt) {
   const hanafi = hanafiAsr();
   const asrStart = hanafi ? e.asr2 : e.asr1;
 
-  const picked = MADHABS.filter(m => cfg.madhabs.includes(m.key));
+  const advanced = isAdvanced(), active = activeMadhabs();
+  const picked = MADHABS.filter(m => active.includes(m.key));
   const ctx = {
     cfg,
     fajrAngle: e.M.fajrAngle,
     ishaDesc: e.M.ishaDesc,
     est: k => (e.est[k] ? ' · تقديري' : ''),
-    has: k => cfg.madhabs.includes(k),
+    has: k => active.includes(k),
     hanafiAsr: hanafi,
     friday: new Date(Date.UTC(dt.y, dt.m - 1, dt.d)).getUTCDay() === 5,
   };
@@ -172,20 +173,22 @@ function computeBuild(dt) {
       if (g) g.names.push(r.name); else groups.push({ note: r.note, seg: r.seg, names: [r.name] });
     }
     groups.forEach(g => { g.label = g.names.join(' و'); });
+    const types = rulings ? rulings.map(r => r.seg) : [];
     return {
       key, raw: t, at: adjust(t, kind), kind,
-      seg: rulings ? combineSegments(rulings.map(r => r.seg)) : null,
+      seg: !rulings ? null : advanced ? combineSegments(types) : majoritySegment(types),
       rulings, groups,
-      agree: !rulings || new Set(rulings.map(r => r.seg)).size === 1,
+      agree: !rulings || new Set(types).size === 1,
       label: T.label, short: T.short,
       sub: typeof T.sub === 'function' ? T.sub(ctx) : (T.sub || ''),
-      // one shared note, or one line per group of madhabs
-      desc: groups.length <= 1 ? (groups[0]?.note || '') : groups.map(g => g.label + ': ' + g.note).join('\n'),
+      // advanced: one line per group of madhabs; recommended: one sentence
+      desc: !rulings ? '' : !advanced ? summarize(rulings)
+        : groups.length <= 1 ? groups[0].note : groups.map(g => g.label + ': ' + g.note).join('\n'),
     };
   };
 
-  // a boundary that exists only in some madhabs is shown only when one of them is selected
-  const onlyFor = (keys, mark) => (keys.some(ctx.has) ? [mark] : []);
+  // a school-specific boundary appears only in advanced mode, with that school selected
+  const onlyFor = (keys, mark) => (advanced && keys.some(ctx.has) ? [mark] : []);
 
   const P = [
     { key: 'fajr', marks: [
