@@ -33,6 +33,10 @@ Everything in `compute` is cached per `version.n`; `bumpVersion()` (via `changed
 - `cfg.rules === 'advanced'` → the madhabs in `cfg.madhabs`. One madhab: its own types. Several: `combineSafe` (most cautious) for the combined row, plus one row per madhab.
 - `activeMadhabs()` and `isAdvanced()` are the only things the rest of the code should ask.
 
+**Simple / detailed (cfg.ui)**
+- `isSimple()` (default). The class `ui-simple` on `<html>` (so dialogs follow) hides everything marked `.adv-only` (madhab/prayer selectors, advanced settings) and all descriptive text (see the `.ui-simple` block in `styles/base.css`). Mark new advanced-only UI with `adv-only`.
+- Simple keeps the chosen madhab(s) but draws only the combined row (`viewRows` in app.js), always shows all five prayers, and uses each mark's `short` label.
+
 **Marks and rules (rulings.js)**
 - A prayer is an ordered list of marks. `mark.by[madhab]` is the ruling *from this mark until the next*: `{ seg, note, fadila }`, `'same'` (previous ruling continues), or `fn(ctx, madhab)`.
 - `seg` types: `fadila ok jawaz karaha darura` are VALID (the prayer is on time); `prev` (not entered), `out` (ended), `nahy`/`free`/`idle` (context). `khilaf` and `kd` only come out of combining.

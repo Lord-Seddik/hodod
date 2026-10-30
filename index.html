@@ -33,6 +33,10 @@
       </div>
     </div>
     <div class="top-actions">
+      <div class="ui-switch" role="radiogroup" aria-label="طريقة العرض" id="uiSwitch">
+        <button type="button" role="radio" data-ui="simple" aria-checked="true">بسيط</button>
+        <button type="button" role="radio" data-ui="detailed" aria-checked="false">مفصّل</button>
+      </div>
       <button class="btn btn-loc" id="locBtn" type="button" aria-label="تغيير الموقع">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>
         <span id="locName">—</span>
@@ -46,7 +50,7 @@
   <!-- live "now" gauge -->
   <section class="now" id="nowCard" aria-live="off">
     <div class="now-main">
-      <div class="eyebrow"><span>الآن في <span id="nowCity">—</span></span><span class="num" id="clock">--:--:--</span></div>
+      <div class="eyebrow"><span>الآن في <span id="nowCity">—</span><span id="nowMadhab"></span></span><span class="num" id="clock">--:--:--</span></div>
       <div class="now-title"><h2 id="nowPrayer">—</h2><span class="pill" id="nowPill"></span></div>
       <p class="now-desc" id="nowDesc"></p>
     </div>
@@ -74,8 +78,8 @@
     </div>
   </nav>
 
-  <!-- madhab + prayer selectors -->
-  <div class="selectors">
+  <!-- madhab + prayer selectors (detailed view) -->
+  <div class="selectors adv-only">
     <div class="sel-row">
       <span class="sel-label" id="madhabLabel">المذهب</span>
       <div class="chips" role="group" aria-labelledby="madhabLabel" id="madhabBar"></div>
@@ -83,10 +87,6 @@
     <div class="sel-row">
       <span class="sel-label" id="prayerLabel">الصلاة</span>
       <div class="chips" role="group" aria-labelledby="prayerLabel" id="prayerBar"></div>
-      <button class="btn sm details-btn" id="detailsBtn" type="button" aria-pressed="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        <span>التفاصيل</span>
-      </button>
     </div>
   </div>
 
@@ -193,7 +193,15 @@
   <form class="dlg" id="setForm" method="dialog">
     <div class="dlg-head"><h3 id="setDlgTitle">الإعدادات</h3><button class="btn sm" value="cancel" type="submit">تم</button></div>
 
-    <fieldset>
+    <fieldset class="ui-field">
+      <legend>طريقة العرض</legend>
+      <label>العرض<select id="sUi">
+        <option value="simple">بسيط: الأوقات والألوان فقط</option>
+        <option value="detailed">مفصّل: المذاهب والصلوات الإضافية والشروح</option>
+      </select></label>
+    </fieldset>
+
+    <fieldset class="adv-only">
       <legend>الصلوات</legend>
       <label class="check"><input id="sDuha" type="checkbox"> إظهار الضحى والإشراق في قائمة الصلوات</label>
       <label class="check"><input id="sJumuah" type="checkbox"> إظهار الجمعة يوم الجمعة</label>
@@ -208,13 +216,13 @@
         <label>زاوية الفجر (°)<input id="sCF" type="number" step="0.1" min="5" max="25"></label>
         <label>زاوية العشاء (°)<input id="sCI" type="number" step="0.1" min="5" max="25"></label>
       </div>
-      <div class="row2">
+      <div class="row2 adv-only">
         <label>بداية العصر<select id="sAsr"><option value="auto">لكل مذهب قوله (المثلين للحنفية)</option><option value="std">ظل المثل للجميع (وقول الصاحبين)</option><option value="hanafi">ظل المثلين للجميع (احتياطاً)</option></select></label>
         <label>دخول العشاء<select id="sIsha"><option value="auto">حسب الهيئة، والأبيض للحنفية إن تأخر</option><option value="method">حسب الهيئة للجميع</option><option value="red">الشفق الأحمر 15° للجميع</option><option value="white">الشفق الأبيض 18° للجميع</option></select></label>
       </div>
     </fieldset>
 
-    <fieldset>
+    <fieldset class="adv-only">
       <legend>تعريف الحدود</legend>
       <div class="row3">
         <label>الإسفار (° تحت الأفق)<input id="sIsfar" type="number" step="0.5" min="1" max="12"></label>

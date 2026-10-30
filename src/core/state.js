@@ -26,7 +26,9 @@ export const DEFAULTS = {
   // alerts
   alerts: true, exitB: 15, karB: 10, entry: false, sound: false, notify: false,
   // display
-  h12: '24', nu: 'latn', theme: 'auto', details: true,
+  h12: '24', nu: 'latn', theme: 'auto',
+  // 'simple': the times and colors only, for the chosen madhab; 'detailed': everything
+  ui: 'simple',
 };
 
 /** [min, max] for numeric settings; also used to sanitize stored values. */
@@ -51,6 +53,8 @@ function sanitize() {
   if (!['auto', 'method', 'red', 'white'].includes(cfg.isha)) cfg.isha = 'auto';
   if (!['auto', 'std', 'hanafi'].includes(cfg.asr)) cfg.asr = 'auto';
   if (!['recommended', 'advanced'].includes(cfg.rules)) cfg.rules = 'recommended';
+  if (!['simple', 'detailed'].includes(cfg.ui)) cfg.ui = 'simple';
+  delete cfg.details; // replaced by cfg.ui
   const picked = Array.isArray(cfg.madhabs) ? ALL_MADHABS.filter(k => cfg.madhabs.includes(k)) : [];
   cfg.madhabs = picked.length ? picked : ALL_MADHABS;
 }
@@ -125,6 +129,9 @@ applyLocation();
 export const methodKey = () => (cfg.method === 'AUTO' ? loc.method : cfg.method);
 
 export const isAdvanced = () => cfg.rules === 'advanced';
+
+/** Simple view: times and colors only; madhab choice, extra prayers and descriptions are hidden. */
+export const isSimple = () => cfg.ui !== 'detailed';
 
 /** Madhabs whose rulings are in effect: the user's pick (advanced) or all four (recommended). */
 export const activeMadhabs = () => (isAdvanced() ? cfg.madhabs : ALL_MADHABS);

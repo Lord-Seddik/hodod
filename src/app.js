@@ -1,5 +1,5 @@
 // App shell: view state, rendering orchestration, navigation, timers.
-import { cfg, loc, saveSettings, bumpVersion, isAdvanced, DEFAULTS } from './core/state.js';
+import { cfg, loc, saveSettings, bumpVersion, isAdvanced, isSimple, DEFAULTS } from './core/state.js';
 import { MADHABS, PRAYERS, PRAYER_ORDER, FARD } from './data/rulings.js';
 import { build, methodParams, displayRows } from './core/compute.js';
 import { ensureTimeline, currentPhase, getPhases, phaseId } from './core/timeline.js';
@@ -81,6 +81,9 @@ function renderDateHead() {
   $('#nextBtn').setAttribute('aria-label', view.mode === 'day' ? 'اليوم التالي' : 'الشهر التالي');
 }
 
+/** The simple view draws only the combined row (the safe row when several madhabs are chosen). */
+const viewRows = rows => (isSimple() ? rows.slice(0, 1) : rows);
+
 /** Sun strip: the whole day, or the selected prayer's window from first entry to last exit. */
 function renderSky(B) {
   const P = view.prayer && B.prayers?.[view.prayer];
@@ -90,7 +93,7 @@ function renderSky(B) {
     drawSky();
     const labels = P.marks.filter(m => !m.quiet && !m.context && m.rules).map(m => ({ at: m.at, text: m.short }));
     $('#skyTitle').textContent = 'وقت ' + P.name + (sameDay(B.dt, view.sel) ? '' : ' · ليلة ' + gregString(B.dt, { weekday: 'long' }));
-    renderSkyOverlay(displayRows([B.dt], view.prayer), labels, 'من أول دخوله إلى آخر خروجه عند المذاهب المختارة');
+    renderSkyOverlay(viewRows(displayRows([B.dt], view.prayer)), labels, 'من أول دخوله إلى آخر خروجه عند المذاهب المختارة');
     return;
   }
   setSpan(localMidnight(view.sel), localMidnight(addDays(view.sel, 1)), true);
@@ -98,7 +101,7 @@ function renderSky(B) {
   $('#skyTitle').textContent = 'مسار الشمس وحدود اليوم';
   const labels = B.polar ? [] : FARD.map(k => B.prayers[k]?.window && { at: B.prayers[k].window.from, text: B.prayers[k].name }).filter(Boolean);
   const estimated = !B.polar && Object.keys(B.e.est).length;
-  renderSkyOverlay(B.polar ? [] : displayRows([addDays(view.sel, -1), view.sel]), labels,
+  renderSkyOverlay(B.polar ? [] : viewRows(displayRows([addDays(view.sel, -1), view.sel])), labels,
     estimated ? 'بعض الأوقات تقديرية لارتفاع خط العرض' : 'من منتصف الليل إلى منتصف الليل بالتوقيت المحلي');
 }
 
@@ -133,9 +136,14 @@ function renderMethodLine() {
 const chip = (attr, val, pressed, text) =>
   '<button type="button" ' + attr + '="' + val + '" aria-pressed="' + pressed + '">' + text + '</button>';
 
-/** Madhab and prayer selectors, details toggle, mode classes and the key's note. */
+/** Simple/detailed switch, madhab and prayer selectors, mode classes and the key's note. */
 function renderSelectors() {
-  const adv = isAdvanced(), app = $('#app'), multi = adv && cfg.madhabs.length > 1;
+  const adv = isAdvanced(), app = $('#app'), multi = adv && cfg.madhabs.length > 1, simple = isSimple();
+  // on <html> so the dialogs (outside #app) follow it too
+  document.documentElement.classList.toggle('ui-simple', simple);
+  document.querySelectorAll('#uiSwitch button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ui === cfg.ui)));
+  // simple view: name the madhab in use when it is not the majority
+  $('#nowMadhab').textContent = simple && adv ? ' · ' + MADHABS.filter(m => cfg.madhabs.includes(m.key)).map(m => m.name).join('، ') : '';
   $('#madhabBar').innerHTML = chip('data-m', 'jumhur', !adv, 'الجمهور')
     + MADHABS.map(m => chip('data-m', m.key, adv && cfg.madhabs.includes(m.key), m.name)).join('');
   // the current prayer's chip carries a «now» dot
@@ -143,9 +151,7 @@ function renderSelectors() {
   $('#prayerBar').innerHTML = chip('data-p', 'all', !view.prayer, 'الكل')
     + prayerKeys(view.sel).map(k => chip('data-p', k, view.prayer === k, PRAYERS[k].name)
       .replace('<button ', '<button ' + (k === nowKey ? 'class="is-now" title="الصلاة الحالية" ' : ''))).join('');
-  $('#detailsBtn').setAttribute('aria-pressed', String(!!cfg.details));
   app.classList.toggle('mode-rec', !adv);
-  app.classList.toggle('compact', !cfg.details);
   $('#legendNote').textContent = !adv ? 'بحسب الاتفاق وقول الجمهور'
     : multi ? 'سطر لكل مذهب، والأعلى الآمن للجميع' : 'بحسب ' + MADHABS.find(m => m.key === cfg.madhabs[0]).name;
 }
@@ -155,8 +161,10 @@ function renderAll() {
   $('#nowCity').textContent = loc.name;
   $('#app').classList.toggle('nu-arab', cfg.nu === 'arab');
   ensureTimeline(true);
-  // by default the day view focuses the current prayer (the month view shows all)
-  if (view.autoPrayer) view.prayer = view.mode === 'day' && sameDay(view.sel, todayLocal()) ? currentPrayerKey() : null;
+  // simple view: always all prayers. Detailed: the day view focuses the current prayer
+  // by default (the month view shows all)
+  if (isSimple()) view.prayer = null;
+  else if (view.autoPrayer) view.prayer = view.mode === 'day' && sameDay(view.sel, todayLocal()) ? currentPrayerKey() : null;
   fixPrayer();
   renderSelectors();
   renderDateHead();
@@ -250,19 +258,24 @@ function initNavigation() {
     selectPrayer(b.dataset.p === view.prayer ? 'all' : b.dataset.p);
     $('#prayerBar button[data-p="' + (view.prayer || 'all') + '"]')?.focus();
   });
-  // tapping a card's title selects that prayer (or returns to all)
+  // tapping a card's title selects that prayer (or returns to all), in the detailed view
   $('#cards').addEventListener('click', e => {
     const h = e.target.closest('.pcard header');
-    if (h) selectPrayer(h.parentElement.dataset.prayer);
+    if (h && !isSimple()) selectPrayer(h.parentElement.dataset.prayer);
   });
-  // details: display only, no recalculation
-  $('#detailsBtn').onclick = () => {
-    cfg.details = !cfg.details;
+  // simple / detailed (display only, no recalculation)
+  const setUi = ui => {
+    if (cfg.ui === ui) return;
+    cfg.ui = ui;
     saveSettings();
-    renderSelectors();
+    renderAll();
   };
+  $('#uiSwitch').addEventListener('click', e => {
+    const b = e.target.closest('button[data-ui]');
+    if (b) setUi(b.dataset.ui);
+  });
 
-  // keyboard: ← next, → previous (RTL), T today, M toggles day/month, D details
+  // keyboard: ← next, → previous (RTL), T today, M toggles day/month, D simple/detailed
   document.addEventListener('keydown', e => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     if (document.querySelector('dialog[open]')) return;
@@ -271,7 +284,7 @@ function initNavigation() {
     else if (e.key === 'ArrowRight') shift(-1);
     else if (e.code === 'KeyT') goToday(); // physical key, so it works on Arabic layouts too
     else if (e.code === 'KeyM') setMode(view.mode === 'day' ? 'month' : 'day');
-    else if (e.code === 'KeyD') $('#detailsBtn').click();
+    else if (e.code === 'KeyD') setUi(isSimple() ? 'detailed' : 'simple');
     else return;
     e.preventDefault();
   });

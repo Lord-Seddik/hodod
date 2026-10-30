@@ -1,6 +1,6 @@
 // Prayer cards for the selected day (all obligatory prayers, or the selected one).
 import { MIN } from '../core/astro.js';
-import { isAdvanced, activeMadhabs } from '../core/state.js';
+import { isAdvanced, isSimple, activeMadhabs } from '../core/state.js';
 import { currentPhase, isPhaseMark } from '../core/timeline.js';
 import { fmtTime, duration, sameDay } from '../core/time.js';
 import { SEGMENTS } from '../data/rulings.js';
@@ -46,7 +46,7 @@ function card(B, P, cur, wide) {
     const type = m.context ? 'nahy' : m.exit ? 'exit' : (m.type || 'nahy');
     return '<li class="mk t-' + type + ' ' + rowClass(m) + (curMark ? ' cur' : '') + '"' + (curMark ? ' aria-current="time"' : '') + '>'
       + '<i class="dot"></i>'
-      + '<span class="lbl"><b>' + esc(m.label) + '</b><small>' + esc(m.sub + stretch(P, m, i)) + '</small>' + rulingsHtml(m, multi) + '</span>'
+      + '<span class="lbl"><b>' + esc(isSimple() ? m.short : m.label) + '</b><small>' + esc(m.sub + stretch(P, m, i)) + '</small>' + rulingsHtml(m, multi) + '</span>'
       + '<time class="num">' + esc(fmtTime(m.at)) + '</time></li>';
   }).join('');
   const range = P.window ? fmtTime(P.window.from) + ' – ' + fmtTime(P.window.to) : '—';

@@ -75,7 +75,7 @@ Architecture notes for future changes: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Keyboard
 
-`←` next day/month · `→` previous · `T` today · `M` switch day/month · `D` show/hide details
+`←` next day/month · `→` previous · `T` today · `M` switch day/month · `D` simple / detailed
 
 ## Notes
 

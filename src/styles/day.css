@@ -19,7 +19,6 @@
 .chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .chips button.is-now{position:relative}
 .chips button.is-now::after{content:"";position:absolute;top:3px;inset-inline-start:5px;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--surface)}
-.details-btn{margin-inline-start:auto}
 
 .day-view{display:grid;gap:18px}
 
@@ -73,16 +72,9 @@
 .mz-notes{display:grid;gap:2px;margin-top:4px}
 .mz-note{display:block;font-size:12.5px;line-height:1.55;color:var(--ink);opacity:.85}
 
-/* recommended mode: the classic look, one verdict per boundary */
+/* majority view: one verdict per boundary, no per-madhab chips */
 .mode-rec .mz-chips,
-.mode-rec .mz-notes,
 .app:not(.mode-rec) .rec-only{display:none}
-
-/* compact view (details off): hide sub-lines, notes and context rows */
-.compact .mk .lbl small,
-.compact .mz-notes,
-.compact .mk.minor{display:none}
-.compact .mk{padding-block:5px}
 
 .polar{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
 .polar p{margin-top:6px}
@@ -101,8 +93,6 @@
   .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-block:2px}
   .chips::-webkit-scrollbar{display:none}
   .chips button{flex:none;padding:4px 12px}
-  .details-btn{flex:none}
-  .details-btn span{display:none}
   /* full-width tabs, then [‹ date ›] on one row and [today | picker] below */
   .dayhead{display:grid}
   .tabs{display:grid;grid-template-columns:1fr 1fr}

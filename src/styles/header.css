@@ -6,3 +6,13 @@
 .top-actions{display:flex;gap:8px;align-items:center;min-width:0}
 .btn-loc{max-width:62vw}
 .btn-loc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* simple / detailed switch */
+.ui-switch{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:3px}
+.ui-switch button{border:0;background:transparent;border-radius:9px;padding:6px 14px;min-height:34px;cursor:pointer;font-weight:600;color:var(--muted)}
+.ui-switch button[aria-checked="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .1)}
+
+@media (max-width:560px){
+  .top-actions{width:100%}
+  .btn-loc{flex:1;min-width:0;max-width:none}
+}

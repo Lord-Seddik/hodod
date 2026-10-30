@@ -32,3 +32,21 @@ button,input,select{font:inherit;color:inherit}
 
 .foot{font-size:13px;color:var(--muted);display:grid;gap:6px}
 .foot p{max-width:85ch}
+
+/* ── simple view (class on <html>): times and colors only.
+   Hides the madhab/prayer selectors, advanced settings and every descriptive text. */
+.ui-simple .adv-only,
+.ui-simple .hint,
+.ui-simple .note,
+.ui-simple .foot,
+.ui-simple .now-desc,
+.ui-simple .next-alert,
+.ui-simple #skyNote,
+.ui-simple #legendNote,
+.ui-simple .legend span,
+.ui-simple .mk .lbl small,
+.ui-simple .mz-chips,
+.ui-simple .mz-notes,
+.ui-simple .mk.minor{display:none}
+.ui-simple .mk{padding-block:5px}
+.ui-simple .legend{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
